@@ -128,6 +128,16 @@ GUIFrame:RegisterContent("tooltips", function(scrollChild, yOffset)
     table_insert(allWidgets, hideHealthCheck)
     card4:AddRow(row6, 34)
 
+    local row7 = GUIFrame:CreateRow(card4.content, 34)
+    local hideInCombatCheck = GUIFrame:CreateCheckbox(row7, "Hide in Combat", db.HideInCombat == true,
+        function(checked)
+            db.HideInCombat = checked
+            ApplySettings()
+        end)
+    row7:AddWidget(hideInCombatCheck, 1)
+    table_insert(allWidgets, hideInCombatCheck)
+    card4:AddRow(row7, 34)
+
     yOffset = yOffset + card4:GetContentHeight() + Theme.paddingSmall
 
     ----------------------------------------------------------------
