@@ -23,6 +23,7 @@ local UnitClass = UnitClass
 local UnitIsConnected = UnitIsConnected
 local UnitIsTapDenied = UnitIsTapDenied
 local UnitIsDeadOrGhost = UnitIsDeadOrGhost
+local UnitAffectingCombat = UnitAffectingCombat
 local GetGuildInfo = GetGuildInfo
 local UnitRace = UnitRace
 local UnitLevel = UnitLevel
@@ -532,6 +533,11 @@ function TT:HookTooltip(tooltip)
     if not self.db.Enabled then return end
     -- Hook OnShow for backdrop setup
     tooltip:HookScript("OnShow", function(self)
+        -- Hide tooltip if in combat and HideInCombat is enabled
+        if TT.db and TT.db.HideInCombat and UnitAffectingCombat("player") then
+            self:Hide()
+            return
+        end
         -- Hide default elements
         TT:HideNineSlice(self)
         TT:HideHealthBars(self)
@@ -683,6 +689,9 @@ function TT:OnEnable()
     isInitialized = true
     tooltipAnchorReg()
 
+    -- Register combat events to hide tooltips when entering combat
+    self:RegisterEvent("PLAYER_REGEN_DISABLED", "OnEnterCombat")
+
     C_Timer.After(0.5, function()
         DisableTooltipEditMode()
     end)
@@ -710,4 +719,14 @@ function TT:OnEnable()
         guiPath = "tooltips",
     }
     NRSKNUI.EditMode:RegisterElement(config)
+end
+
+-- Hide all visible tooltips when entering combat (if HideInCombat is enabled)
+function TT:OnEnterCombat()
+    if not self.db or not self.db.HideInCombat then return end
+    for tooltip in pairs(hookedTooltips) do
+        if tooltip:IsShown() then
+            tooltip:Hide()
+        end
+    end
 end

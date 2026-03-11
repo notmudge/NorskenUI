@@ -1395,6 +1395,7 @@ local Defaults = {
                 BorderColor = { 0, 0, 0, 1 },       -- Black border
                 BorderSize = 1,                     -- Border thickness
                 HideHealthBar = true,               -- Hide health bar on unit tooltips
+                HideInCombat = false,               -- Hide tooltips while in combat
                 Font = "Expressway",                -- Font face
                 FontOutline = "OUTLINE",            -- Font outline
                 NameFontSize = 17,                  -- Name Font size
