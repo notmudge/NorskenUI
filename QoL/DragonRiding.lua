@@ -499,17 +499,17 @@ function DR:OnShowHandler()
     end
 
     self.vigorFrame:RegisterEvent('SPELL_UPDATE_CHARGES')
-    self.vigorFrame:SetScript('OnEvent', function() UpdateVigor(self) end)
+    self.vigorFrame:SetScript('OnEvent', function() C_Timer.After(0, function() UpdateVigor(self) end) end)
     self.vigorFrame:RegisterUnitEvent('UNIT_AURA', 'player')
-    self.vigorFrame:HookScript('OnEvent', function() UpdateVigorColor(self) end)
+    self.vigorFrame:HookScript('OnEvent', function() C_Timer.After(0, function() UpdateVigorColor(self) end) end)
 
     self.surgeFrame:RegisterEvent('SPELL_UPDATE_COOLDOWN')
     self.surgeFrame:RegisterEvent('SPELL_UPDATE_CHARGES')
-    self.surgeFrame:SetScript('OnEvent', function() UpdateWhirlingSurge(self) end)
+    self.surgeFrame:SetScript('OnEvent', function() C_Timer.After(0, function() UpdateWhirlingSurge(self) end) end)
 
     self.secondWindFrame:RegisterEvent('SPELL_UPDATE_COOLDOWN')
     self.secondWindFrame:RegisterEvent('SPELL_UPDATE_CHARGES')
-    self.secondWindFrame:SetScript('OnEvent', function() UpdateSecondWind(self) end)
+    self.secondWindFrame:SetScript('OnEvent', function() C_Timer.After(0, function() UpdateSecondWind(self) end) end)
 
     self.speedTicker = C_Timer.NewTicker(0.05, function() UpdateSpeed(self) end)
 
