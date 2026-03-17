@@ -708,8 +708,17 @@ local function RenderStancesTab(scrollChild, yOffset, activeCards)
             db.Stances.DRUID.BalanceEnabled = checked
             Refresh()
         end)
-    balanceRow:AddWidget(balanceToggle, 0.9)
+    balanceRow:AddWidget(balanceToggle, 0.6)
     table_insert(allWidgets, balanceToggle)
+
+    local balanceCombatToggle = GUIFrame:CreateCheckbox(balanceRow, "Combat Only",
+        db.Stances.DRUID.BalanceCombatOnly == true,
+        function(checked)
+            db.Stances.DRUID.BalanceCombatOnly = checked
+            Refresh()
+        end)
+    balanceRow:AddWidget(balanceCombatToggle, 0.3)
+    table_insert(allWidgets, balanceCombatToggle)
     druidCard:AddRow(balanceRow, 40)
 
     -- Separator
@@ -730,8 +739,17 @@ local function RenderStancesTab(scrollChild, yOffset, activeCards)
             db.Stances.DRUID.FeralEnabled = checked
             Refresh()
         end)
-    feralRow:AddWidget(feralToggle, 0.9)
+    feralRow:AddWidget(feralToggle, 0.6)
     table_insert(allWidgets, feralToggle)
+
+    local feralCombatToggle = GUIFrame:CreateCheckbox(feralRow, "Combat Only",
+        db.Stances.DRUID.FeralCombatOnly == true,
+        function(checked)
+            db.Stances.DRUID.FeralCombatOnly = checked
+            Refresh()
+        end)
+    feralRow:AddWidget(feralCombatToggle, 0.3)
+    table_insert(allWidgets, feralCombatToggle)
     druidCard:AddRow(feralRow, 40)
 
     -- Separator
@@ -752,8 +770,17 @@ local function RenderStancesTab(scrollChild, yOffset, activeCards)
             db.Stances.DRUID.GuardianEnabled = checked
             Refresh()
         end)
-    guardianRow:AddWidget(guardianToggle, 0.9)
+    guardianRow:AddWidget(guardianToggle, 0.6)
     table_insert(allWidgets, guardianToggle)
+
+    local guardianCombatToggle = GUIFrame:CreateCheckbox(guardianRow, "Combat Only",
+        db.Stances.DRUID.GuardianCombatOnly == true,
+        function(checked)
+            db.Stances.DRUID.GuardianCombatOnly = checked
+            Refresh()
+        end)
+    guardianRow:AddWidget(guardianCombatToggle, 0.3)
+    table_insert(allWidgets, guardianCombatToggle)
     druidCard:AddRow(guardianRow, 40)
 
     yOffset = yOffset + druidCard:GetContentHeight() + Theme.paddingSmall

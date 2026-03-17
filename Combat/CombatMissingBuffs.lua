@@ -1002,14 +1002,19 @@ local function CheckStances()
     -- Special handling for Druid
     if playerClass == "DRUID" then
         local druidSpecs = {
-            [102] = { toggleKey = "BalanceEnabled", spellId = 24858 },
-            [103] = { toggleKey = "FeralEnabled", spellId = 768 },
-            [104] = { toggleKey = "GuardianEnabled", spellId = 5487 },
+            [102] = { toggleKey = "BalanceEnabled", combatOnlyKey = "BalanceCombatOnly", spellId = 24858 },
+            [103] = { toggleKey = "FeralEnabled", combatOnlyKey = "FeralCombatOnly", spellId = 768 },
+            [104] = { toggleKey = "GuardianEnabled", combatOnlyKey = "GuardianCombatOnly", spellId = 5487 },
         }
 
         local specData = druidSpecs[currentSpecId]
         if not specData then return end
         if not classSettings[specData.toggleKey] then return end
+
+        -- Check combat only setting
+        if classSettings[specData.combatOnlyKey] and not InCombatLockdown() then
+            return
+        end
 
         -- Get current form
         local currentForm = GetShapeshiftForm()
