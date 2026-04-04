@@ -30,6 +30,7 @@ local isHunter = playerClass == "HUNTER"
 -- Module locals
 local SPELL_ID = 257284 -- Hunter's Mark
 local markedUnits = {}
+local inEncounter = false
 
 -- Update db, used for profile changes
 function HUNTMARK:UpdateDB()
@@ -81,6 +82,12 @@ function HUNTMARK:UpdateWarningDisplay()
     if self.isPreview then return end
     if not self.frame then return end
 
+    -- Never show during combat or encounters
+    if inEncounter or InCombatLockdown() then
+        self.frame:Hide()
+        return
+    end
+
     -- No boss nameplates visible, hide warning
     if not next(markedUnits) then
         self.frame:Hide()
@@ -103,11 +110,12 @@ end
 -- We dont care about other hunters marks
 function HUNTMARK:CheckUnitForMark(unit)
     if not isHunter then return end
+    if inEncounter or InCombatLockdown() then return end
     if not unit or not UnitExists(unit) or not UnitIsBossMob(unit) then return end
 
     local hasMarkNow = false
     AuraUtil.ForEachAura(unit, "HARMFUL", nil, function(auraInfo)
-        if auraInfo and auraInfo.spellId == SPELL_ID and auraInfo.sourceUnit == "player" then
+        if auraInfo and not issecretvalue(auraInfo.spellId) and auraInfo.spellId == SPELL_ID and auraInfo.sourceUnit == "player" then
             hasMarkNow = true
             return true
         end
@@ -127,6 +135,8 @@ function HUNTMARK:SetScanningActive(active)
         self.scannerFrame:RegisterEvent("NAME_PLATE_UNIT_REMOVED")
         self.scannerFrame:RegisterEvent("PLAYER_REGEN_DISABLED")
         self.scannerFrame:RegisterEvent("PLAYER_REGEN_ENABLED")
+        self.scannerFrame:RegisterEvent("ENCOUNTER_START")
+        self.scannerFrame:RegisterEvent("ENCOUNTER_END")
         self.scannerFrame:RegisterUnitEvent("UNIT_AURA",
             "nameplate1", "nameplate2", "nameplate3", "nameplate4", "nameplate5",
             "nameplate6", "nameplate7", "nameplate8", "nameplate9", "nameplate10", "target")
@@ -135,8 +145,11 @@ function HUNTMARK:SetScanningActive(active)
         self.scannerFrame:UnregisterEvent("NAME_PLATE_UNIT_REMOVED")
         self.scannerFrame:UnregisterEvent("PLAYER_REGEN_DISABLED")
         self.scannerFrame:UnregisterEvent("PLAYER_REGEN_ENABLED")
+        self.scannerFrame:UnregisterEvent("ENCOUNTER_START")
+        self.scannerFrame:UnregisterEvent("ENCOUNTER_END")
         self.scannerFrame:UnregisterEvent("UNIT_AURA")
         wipe(markedUnits)
+        inEncounter = false
         self.frame:Hide()
     end
 end
@@ -163,13 +176,27 @@ function HUNTMARK:StartScanning()
         -- Only process other events when in a raid
         if not IsInRaid() then return end
 
+        if event == "ENCOUNTER_START" then
+            inEncounter = true
+            wipe(markedUnits)
+            self.frame:Hide()
+            return
+        end
+
+        if event == "ENCOUNTER_END" then
+            inEncounter = false
+            return
+        end
+
         if event == "PLAYER_REGEN_DISABLED" then
+            wipe(markedUnits)
             self.frame:Hide()
             return
         end
 
         if event == "PLAYER_REGEN_ENABLED" then
-            -- Rescan when leaving combat
+            -- Only rescan if not in an encounter
+            if inEncounter then return end
             wipe(markedUnits)
             for _, namePlate in next, C_NamePlate.GetNamePlates() do
                 if namePlate.unitToken then
@@ -179,7 +206,7 @@ function HUNTMARK:StartScanning()
             return
         end
 
-        if InCombatLockdown() then return end
+        if InCombatLockdown() or inEncounter then return end
 
         -- Validate unit is a string before processing
         if type(unit) ~= "string" then return end
@@ -271,6 +298,7 @@ function HUNTMARK:OnDisable()
         self.frame = nil
     end
     wipe(markedUnits)
+    inEncounter = false
     self.isPreview = false
 end
 
