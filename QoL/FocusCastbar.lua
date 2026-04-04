@@ -658,7 +658,12 @@ end
 -- Update interruptible state mid-cast
 function FCB:UpdateInterruptible()
     if not self.frame or not self.frame:IsShown() then return end
-    local notInterruptible = select(8, UnitCastingInfo("focus")) or select(7, UnitChannelInfo("focus"))
+    if not C_CastingInfo then return end
+    -- Use C_CastingInfo to avoid secret boolean taint issues
+    local castInfo = C_CastingInfo.GetCastInfo("focus") or C_CastingInfo.GetChannelInfo("focus")
+    if not castInfo then return end
+
+    local notInterruptible = castInfo.notInterruptible
     self.notInterruptible = notInterruptible
 
     -- Hide non-interruptible casts if enabled
