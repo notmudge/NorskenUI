@@ -27,6 +27,7 @@ GUIFrame:RegisterContent("TimeSpiral", function(scrollChild, yOffset)
     local allWidgets = {}
     local glowWidgets = {}
     local textWidgets = {}
+    local timerWidgets = {}
 
     local function ApplySettings()
         if TSP and TSP.ApplySettings then
@@ -62,6 +63,15 @@ GUIFrame:RegisterContent("TimeSpiral", function(scrollChild, yOffset)
         end
     end
 
+    local function UpdateTimerWidgetStates()
+        local timerEnabled = db.ShowTimer ~= false
+        for _, widget in ipairs(timerWidgets) do
+            if widget.SetEnabled then
+                widget:SetEnabled(timerEnabled)
+            end
+        end
+    end
+
     local function UpdateAllWidgetStates()
         local mainEnabled = db.Enabled ~= false
 
@@ -75,6 +85,7 @@ GUIFrame:RegisterContent("TimeSpiral", function(scrollChild, yOffset)
         if mainEnabled then
             UpdateGlowWidgetStates()
             UpdateTextWidgetStates()
+            UpdateTimerWidgetStates()
         end
     end
 
@@ -262,9 +273,80 @@ GUIFrame:RegisterContent("TimeSpiral", function(scrollChild, yOffset)
     yOffset = yOffset + card3:GetContentHeight() + Theme.paddingSmall
 
     ----------------------------------------------------------------
-    -- Card 4: Position Settings
+    -- Card 4: Timer Settings
     ----------------------------------------------------------------
-    local card4, newOffset = GUIFrame:CreatePositionCard(scrollChild, yOffset, {
+    local card4 = GUIFrame:CreateCard(scrollChild, "Timer Settings", yOffset)
+    table_insert(allWidgets, card4)
+
+    -- Show Timer Checkbox and Timer Color Picker (same row)
+    local row4a = GUIFrame:CreateRow(card4.content, 40)
+    local showTimerCheck = GUIFrame:CreateCheckbox(row4a, "Show Timer Text", db.ShowTimer ~= false,
+        function(checked)
+            db.ShowTimer = checked
+            UpdateTimerWidgetStates()
+            ApplySettings()
+        end)
+    row4a:AddWidget(showTimerCheck, 0.5)
+    table_insert(allWidgets, showTimerCheck)
+
+    local timerColorPicker = GUIFrame:CreateColorPicker(row4a, "Timer Color",
+        db.TimerTextColor or { 1, 1, 1, 1 },
+        function(r, g, b, a)
+            db.TimerTextColor = { r, g, b, a }
+            ApplySettings()
+        end)
+    row4a:AddWidget(timerColorPicker, 0.5)
+    table_insert(allWidgets, timerColorPicker)
+    table_insert(timerWidgets, timerColorPicker)
+    card4:AddRow(row4a, 40)
+
+    -- Separator
+    local rowSep3 = GUIFrame:CreateRow(card4.content, 8)
+    local sep3 = GUIFrame:CreateSeparator(rowSep3)
+    rowSep3:AddWidget(sep3, 1)
+    table_insert(allWidgets, sep3)
+    card4:AddRow(rowSep3, 8)
+
+    -- Timer Font Face and Size
+    local row4b = GUIFrame:CreateRow(card4.content, 40)
+    local timerFontDropdown = GUIFrame:CreateDropdown(row4b, "Font", fontList, db.TimerFontFace or "Expressway", 30,
+        function(key)
+            db.TimerFontFace = key
+            ApplySettings()
+        end)
+    row4b:AddWidget(timerFontDropdown, 0.5)
+    table_insert(allWidgets, timerFontDropdown)
+    table_insert(timerWidgets, timerFontDropdown)
+
+    -- Timer Font Size Slider
+    local timerFontSizeSlider = GUIFrame:CreateSlider(card4.content, "Font Size", 8, 36, 1, db.TimerFontSize or 16, 60,
+        function(val)
+            db.TimerFontSize = val
+            ApplySettings()
+        end)
+    row4b:AddWidget(timerFontSizeSlider, 0.5)
+    table_insert(allWidgets, timerFontSizeSlider)
+    table_insert(timerWidgets, timerFontSizeSlider)
+    card4:AddRow(row4b, 40)
+
+    -- Timer Font Outline Dropdown
+    local row4c = GUIFrame:CreateRow(card4.content, 36)
+    local timerOutlineDropdown = GUIFrame:CreateDropdown(row4c, "Outline", outlineList, db.TimerFontOutline or "SOFTOUTLINE", 45,
+        function(key)
+            db.TimerFontOutline = key
+            ApplySettings()
+        end)
+    row4c:AddWidget(timerOutlineDropdown, 1)
+    table_insert(allWidgets, timerOutlineDropdown)
+    table_insert(timerWidgets, timerOutlineDropdown)
+    card4:AddRow(row4c, 36)
+
+    yOffset = yOffset + card4:GetContentHeight() + Theme.paddingSmall
+
+    ----------------------------------------------------------------
+    -- Card 5: Position Settings
+    ----------------------------------------------------------------
+    local card5, newOffset = GUIFrame:CreatePositionCard(scrollChild, yOffset, {
         db = db,
         dbKeys = {
             anchorFrameType = "anchorFrameType",
@@ -280,12 +362,12 @@ GUIFrame:RegisterContent("TimeSpiral", function(scrollChild, yOffset)
         onChangeCallback = ApplySettings,
     })
 
-    if card4.positionWidgets then
-        for _, widget in ipairs(card4.positionWidgets) do
+    if card5.positionWidgets then
+        for _, widget in ipairs(card5.positionWidgets) do
             table_insert(allWidgets, widget)
         end
     end
-    table_insert(allWidgets, card4)
+    table_insert(allWidgets, card5)
 
     yOffset = newOffset
 

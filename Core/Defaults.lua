@@ -53,10 +53,17 @@ local Defaults = {
             GlowType = "proc", -- pixel, autocast, button, proc
             GlowColor = { 0, 1, 0, 1 },
 
-            -- Font
+            -- Label Font
             FontFace = "Expressway",
             FontSize = 14,
             FontOutline = "SOFTOUTLINE",
+
+            -- Timer Text
+            ShowTimer = true,
+            TimerTextColor = { 1, 1, 1, 1 },
+            TimerFontFace = "Expressway",
+            TimerFontSize = 16,
+            TimerFontOutline = "SOFTOUTLINE",
 
             -- Position
             Strata = "HIGH",
@@ -118,6 +125,7 @@ local Defaults = {
         -- Minimap Icon Settings
         Minimap = {
             hide = false, -- Show/hide minimap icon
+            LoginMessage = true, -- Show login chat message
         },
         -- Combat Timer Settings
         CombatTimer = {
