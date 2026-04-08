@@ -222,8 +222,8 @@ local ThemeDefaults = {
     -- Dimensions
     headerHeight   = 35,
     footerHeight   = 28,
-    sidebarWidth   = 162,
-    contentWidth   = 562,
+    sidebarWidth   = 192,
+    contentWidth   = 702,
     borderSize     = 1,
 
     -- Spacing
