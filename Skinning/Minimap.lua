@@ -21,7 +21,6 @@ local CreateFrame = CreateFrame
 local unpack = unpack
 local LibStub = LibStub
 local _G = _G
-local expBtn = ExpansionLandingPageMinimapButton
 local mailBtn = MiniMapMailIcon
 local qBtn = QueueStatusButton
 
@@ -226,24 +225,6 @@ function MAP:UpdateMinimapBorder()
     Minimap.Border:SetBackdropBorderColor(unpack(self.db.Border.Color))
 end
 
--- Apply/Update Expansion Button position and visibility
-function MAP:UpdateExpansionBtn()
-    if not expBtn then return end
-
-    local expBtnDB = self.db.ExpansionButton
-    expBtn:ClearAllPoints()
-    expBtn:SetPoint(expBtnDB.Anchor, Minimap, expBtnDB.Anchor, expBtnDB.X, expBtnDB.Y)
-    expBtn:SetScale(expBtnDB.Scale)
-
-    if expBtnDB.Hide then
-        expBtn:Hide()
-        expBtn:SetAlpha(0)
-    else
-        expBtn:Show()
-        expBtn:SetAlpha(1)
-    end
-end
-
 -- Apply/Update Mail Button position
 function MAP:UpdateMailBtn()
     if not mailBtn then return end
@@ -385,7 +366,6 @@ end
 function MAP:UpdateSettings()
     C_Timer.After(0.25, function()
         if not self.db.Enabled then return end
-        MAP:UpdateExpansionBtn()
         MAP:UpdateMailBtn()
         MAP:UpdateInstanceBtn()
         MAP:UpdateQueueBtn()
