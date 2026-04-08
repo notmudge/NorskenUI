@@ -7,7 +7,10 @@ local addonName = select(1, ...)
 -- Localization
 local ipairs = ipairs
 local print = print
+local issecrettable = issecrettable
+local canaccessvalue = canaccessvalue
 local issecretvalue = issecretvalue
+local pcall = pcall
 local string_gsub = string.gsub
 local ReloadUI = ReloadUI
 local C_AddOns = C_AddOns
@@ -78,18 +81,6 @@ end
 
 -- Secret API utilities (based on oUF implementation by Simpy)
 -- These help safely handle Blizzard's secret/protected values
-
--- Check if a unit's identity should be secret
-function NRSKNUI:IsSecretUnit(unit)
-    local ok, value = pcall(ShouldUnitIdentityBeSecret, unit)
-    if ok then
-        return value
-    end
-end
-
-function NRSKNUI:NotSecretUnit(unit)
-    return not self:IsSecretUnit(unit)
-end
 
 -- Check if a value is a secret value
 function NRSKNUI:IsSecretValue(value)
@@ -281,21 +272,30 @@ end
 
 -- Start all module previews
 function PreviewManager:StartAllPreviews()
+    -- Prevent re-entry
+    if self._startingPreviews then return end
+    self._startingPreviews = true
+
     local Addon = NorskenUI
-    if not Addon then return end
+    if not Addon then
+        self._startingPreviews = false
+        return
+    end
 
     for _, moduleName in ipairs(PREVIEW_MODULES) do
         local module = Addon:GetModule(moduleName, true)
-        if module and module.ShowPreview and module.db.Enabled then
+        if module and module.ShowPreview and module.db and module.db.Enabled then
             module:ShowPreview()
         end
     end
 
     -- CursorCircle uses ApplySettings instead of ShowPreview
     local CursorCircle = Addon:GetModule("CursorCircle", true)
-    if CursorCircle and CursorCircle.ApplySettings and CursorCircle.db.Enabled then
+    if CursorCircle and CursorCircle.ApplySettings and CursorCircle.db and CursorCircle.db.Enabled then
         CursorCircle:ApplySettings()
     end
+
+    self._startingPreviews = false
 end
 
 -- Stop all module previews
