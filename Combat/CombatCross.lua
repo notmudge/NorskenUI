@@ -16,7 +16,6 @@ local CC = NorskenUI:NewModule("CombatCross", "AceEvent-3.0")
 local select = select
 local CreateFrame = CreateFrame
 local InCombatLockdown = InCombatLockdown
-local UIFrameFadeIn = UIFrameFadeIn
 local UIParent = UIParent
 local GetSpecialization = GetSpecialization
 local GetSpecializationInfo = GetSpecializationInfo
@@ -304,11 +303,18 @@ end
 
 -- Show combat cross
 function CC:Show(isPreview)
+    -- Prevent recursion
+    if self._isShowing then return end
+    self._isShowing = true
+
     if not self.frame then
         self:CreateFrame()
         self:ApplySettings()
     end
-    if not self.frame then return end
+    if not self.frame then
+        self._isShowing = false
+        return
+    end
 
     -- Set active state
     if isPreview then
@@ -320,11 +326,12 @@ function CC:Show(isPreview)
     -- Show frame if either state is active
     if self.previewActive or self.combatActive then
         if not self.frame:IsShown() then
+            self.frame:SetAlpha(1)
             self.frame:Show()
-            self.frame:SetAlpha(0)
-            UIFrameFadeIn(self.frame, 0.3, 0, 1)
         end
     end
+
+    self._isShowing = false
 end
 
 -- Hide combat cross
@@ -365,16 +372,22 @@ end
 
 -- Combat enter event
 function CC:OnEnterCombat()
+    if self._enteringCombat then return end  -- Prevent recursion
     if not self.db.Enabled then return end
+    self._enteringCombat = true
     self:Show(false)
     self:UpdateOnUpdateState()
+    self._enteringCombat = false
 end
 
 -- Combat exit event
 function CC:OnExitCombat()
+    if self._exitingCombat then return end  -- Prevent recursion
     if not self.db.Enabled then return end
+    self._exitingCombat = true
     self:Hide(false)
     self:UpdateOnUpdateState()
+    self._exitingCombat = false
 end
 
 -- Refresh (called from GUI)

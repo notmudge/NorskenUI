@@ -55,12 +55,13 @@ local ALPHA_STRENGTH = {
 
 -- Strip WoW escape codes from text for solid outline
 -- We do this so that colored text and embedded textures don't appear in the outline shadows
+-- Textures are replaced with spaces to approximate the icon width for better alignment
 local function StripEscapeCodes(text)
     if not text then return "" end
     text = text:gsub("|c%x%x%x%x%x%x%x%x", "") -- Remove |cAARRGGBB (color start)
     text = text:gsub("|r", "")                 -- Remove |r (color reset)
-    text = text:gsub("|T.-|t", "")             -- Remove |T...|t (textures)
-    text = text:gsub("|A.-|a", "")             -- Remove |A...|a (atlas textures)
+    text = text:gsub("|T.-|t", "   ")          -- Replace |T...|t (textures) with spaces (~icon width)
+    text = text:gsub("|A.-|a", "   ")          -- Replace |A...|a (atlas textures) with spaces
     return text
 end
 
@@ -264,12 +265,17 @@ function SoftOutline:_HookMain()
     main._nrsknSoftOutline = self
 
     local SOFT_OUTLINE_FADEOUT_SPEED = 0.85
+    local fadeHookRunning = false  -- Recursion guard
     hooksecurefunc("UIFrameFade", function(frame, fadeInfo)
         if not frame or not fadeInfo then return end
+        if fadeHookRunning then return end  -- Prevent recursion
 
         if frame._nrsknSoftOutline then
             local outline = frame._nrsknSoftOutline
             if not outline or not outline.shadows then return end
+
+            -- Set guard AFTER validation, reset at end
+            fadeHookRunning = true
 
             -- Determine if this is a fade out
             local isFadeOut = fadeInfo.mode == "OUT"
@@ -296,6 +302,8 @@ function SoftOutline:_HookMain()
 
                 UIFrameFade(shadow, shadowFade)
             end
+
+            fadeHookRunning = false  -- Reset guard after processing all shadows
         end
     end)
 
@@ -303,20 +311,24 @@ function SoftOutline:_HookMain()
     if UIFrameFadeIn then
         hooksecurefunc("UIFrameFadeIn", function(frame, timeToFade, startAlpha, endAlpha)
             if not frame then return end
+            if fadeHookRunning then return end  -- Prevent recursion
 
-            -- If fading in a FontString with soft outline, show its shadows
             if frame._nrsknSoftOutline then
                 local outline = frame._nrsknSoftOutline
-                if outline and outline.shadows and outline.isShown then
-                    -- Check if text color alpha is visible
-                    local _, _, _, textAlpha = frame:GetTextColor()
-                    if textAlpha ~= 0 then
-                        for _, shadow in ipairs(outline.shadows) do
-                            shadow:SetAlpha(startAlpha or 0)
-                            shadow:Show()
-                        end
+                if not outline or not outline.shadows or not outline.isShown then return end
+
+                fadeHookRunning = true
+
+                -- Check if text color alpha is visible
+                local _, _, _, textAlpha = frame:GetTextColor()
+                if textAlpha ~= 0 then
+                    for _, shadow in ipairs(outline.shadows) do
+                        shadow:SetAlpha(startAlpha or 0)
+                        shadow:Show()
                     end
                 end
+
+                fadeHookRunning = false
             end
         end)
     end
@@ -325,19 +337,24 @@ function SoftOutline:_HookMain()
     if UIFrameFadeOut then
         hooksecurefunc("UIFrameFadeOut", function(frame, timeToFade, startAlpha, endAlpha)
             if not frame then return end
+            if fadeHookRunning then return end  -- Prevent recursion
 
             if frame._nrsknSoftOutline then
                 local outline = frame._nrsknSoftOutline
-                if outline and outline.shadows and outline.isShown then
-                    -- Check if text color alpha is visible
-                    local _, _, _, textAlpha = frame:GetTextColor()
-                    if textAlpha ~= 0 then
-                        for _, shadow in ipairs(outline.shadows) do
-                            shadow:SetAlpha(startAlpha or 1)
-                            shadow:Show()
-                        end
+                if not outline or not outline.shadows or not outline.isShown then return end
+
+                fadeHookRunning = true
+
+                -- Check if text color alpha is visible
+                local _, _, _, textAlpha = frame:GetTextColor()
+                if textAlpha ~= 0 then
+                    for _, shadow in ipairs(outline.shadows) do
+                        shadow:SetAlpha(startAlpha or 1)
+                        shadow:Show()
                     end
                 end
+
+                fadeHookRunning = false
             end
         end)
     end

@@ -14,8 +14,6 @@ local CM = NorskenUI:NewModule("CombatMessage", "AceEvent-3.0")
 
 -- Localization
 local CreateFrame = CreateFrame
-local UIFrameFadeRemoveFrame = UIFrameFadeRemoveFrame
-local UIFrameFadeOut = UIFrameFadeOut
 local UnitExists, UnitIsDeadOrGhost = UnitExists, UnitIsDeadOrGhost
 local InCombatLockdown = InCombatLockdown
 local ipairs, pairs = ipairs, pairs
@@ -147,12 +145,6 @@ function CM:ShowFlashMessage(msgType)
     frame.generation = frame.generation + 1
     local myGeneration = frame.generation
 
-    -- Stop any existing fade
-    if UIFrameFadeRemoveFrame then
-        UIFrameFadeRemoveFrame(frame)
-    end
-    frame:SetScript("OnUpdate", nil)
-
     -- Set text and color
     frame.text:SetText(msgText)
     frame.text:SetTextColor(color[1] or 1, color[2] or 1, color[3] or 1, color[4] or 1)
@@ -163,7 +155,7 @@ function CM:ShowFlashMessage(msgType)
     self.activeMessages[msgType] = true
     self:ArrangeMessages()
 
-    -- Fade out and hide
+    -- Hide after duration (no fade to avoid soft outline recursion)
     local function HideIfCurrent()
         if frame.generation == myGeneration and not self.isPreview then
             frame:Hide()
@@ -172,12 +164,7 @@ function CM:ShowFlashMessage(msgType)
         end
     end
 
-    if UIFrameFadeOut then
-        UIFrameFadeOut(frame, duration, 1, 0)
-        C_Timer.After(duration, HideIfCurrent)
-    else
-        C_Timer.After(duration, HideIfCurrent)
-    end
+    C_Timer.After(duration, HideIfCurrent)
 end
 
 -- Show a persistent message
@@ -190,12 +177,6 @@ function CM:ShowPersistentMessage(msgType)
 
     local frame = self:GetMessageFrame(msgType)
     if not frame then return end
-
-    -- Stop any existing fade
-    if UIFrameFadeRemoveFrame then
-        UIFrameFadeRemoveFrame(frame)
-    end
-    frame:SetScript("OnUpdate", nil)
 
     -- Set text and color
     frame.text:SetText(msgText)
