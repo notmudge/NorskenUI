@@ -16,4 +16,5 @@
     <Include file="TaintLess/TaintLess.xml" />
     <Script file="LibEditModeOverride\LibEditModeOverride.lua" />
     <Include file="LibEditMode\embed.xml" />
+    <Script file="IndentationLib.lua"/>
 </Ui>

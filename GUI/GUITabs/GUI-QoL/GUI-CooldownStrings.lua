@@ -264,181 +264,22 @@ GUIFrame:RegisterContent("CooldownStrings", function(scrollChild, yOffset)
         card3:AddRow(row3a, 42)
 
         -- Row 2: Profile String EditBox (multiline)
-        local row3b = GUIFrame:CreateRow(card3.content, 140)
-
-        -- Create a multiline editbox container
-        local editContainer = CreateFrame("Frame", nil, row3b, "BackdropTemplate")
-        editContainer:SetHeight(130)
-        editContainer:SetBackdrop({
-            bgFile = "Interface\\Buttons\\WHITE8x8",
-            edgeFile = "Interface\\Buttons\\WHITE8x8",
-            edgeSize = 1,
+        local row3b = GUIFrame:CreateRow(card3.content, 134)
+        local profileStringEditor = GUIFrame:CreateMultiLineEditBox(row3b, {
+            label = "Profile String (paste your CDM export here)",
+            value = selectedProfile.String or "",
+            height = 120,
+            tooltip = "CTRL+C to copy, CTRL+V to paste, CTRL+A to select all",
+            onTextChanged = function(text)
+                if selectedProfileName and db.Profiles[selectedProfileName] then
+                    db.Profiles[selectedProfileName].String = text
+                    SyncWithModule()
+                end
+            end,
         })
-        editContainer:SetBackdropColor(Theme.bgDark[1], Theme.bgDark[2], Theme.bgDark[3], 1)
-        editContainer:SetBackdropBorderColor(Theme.border[1], Theme.border[2], Theme.border[3], 1)
-
-        -- Border animation state
-        local borderR, borderG, borderB = Theme.border[1], Theme.border[2], Theme.border[3]
-        local borderAnimGroup = editContainer:CreateAnimationGroup()
-        local borderAnim = borderAnimGroup:CreateAnimation("Animation")
-        borderAnim:SetDuration(0.18)
-
-        local borderColorFrom = {}
-        local borderColorTo = {}
-
-        local function AnimateBorder(toAccent)
-            borderAnimGroup:Stop()
-            borderColorFrom.r = borderR
-            borderColorFrom.g = borderG
-            borderColorFrom.b = borderB
-
-            if toAccent then
-                borderColorTo.r = Theme.accent[1]
-                borderColorTo.g = Theme.accent[2]
-                borderColorTo.b = Theme.accent[3]
-            else
-                borderColorTo.r = Theme.border[1]
-                borderColorTo.g = Theme.border[2]
-                borderColorTo.b = Theme.border[3]
-            end
-            borderAnimGroup:Play()
-        end
-
-        borderAnimGroup:SetScript("OnUpdate", function(self)
-            local progress = self:GetProgress() or 0
-            local r = borderColorFrom.r + (borderColorTo.r - borderColorFrom.r) * progress
-            local g = borderColorFrom.g + (borderColorTo.g - borderColorFrom.g) * progress
-            local b = borderColorFrom.b + (borderColorTo.b - borderColorFrom.b) * progress
-            editContainer:SetBackdropBorderColor(r, g, b, 1)
-            borderR, borderG, borderB = r, g, b
-        end)
-
-        borderAnimGroup:SetScript("OnFinished", function()
-            editContainer:SetBackdropBorderColor(borderColorTo.r, borderColorTo.g, borderColorTo.b, 1)
-            borderR, borderG, borderB = borderColorTo.r, borderColorTo.g, borderColorTo.b
-        end)
-
-        -- Label above editbox
-        local editLabel = editContainer:CreateFontString(nil, "OVERLAY")
-        editLabel:SetPoint("TOPLEFT", editContainer, "TOPLEFT", 3, 16)
-        NRSKNUI:ApplyThemeFont(editLabel, "small")
-        editLabel:SetText("Profile String (paste your CDM export here):")
-        editLabel:SetTextColor(Theme.textSecondary[1], Theme.textSecondary[2], Theme.textSecondary[3], 1)
-
-        -- Scroll frame for editbox
-        local scrollFrame = CreateFrame("ScrollFrame", nil, editContainer, "UIPanelScrollFrameTemplate")
-        scrollFrame:SetPoint("TOPLEFT", editContainer, "TOPLEFT", 4, -4)
-        scrollFrame:SetPoint("BOTTOMRIGHT", editContainer, "BOTTOMRIGHT", -22, 4)
-
-        -- Style scrollbar
-        if scrollFrame.ScrollBar then
-            scrollFrame.ScrollBar:ClearAllPoints()
-            scrollFrame.ScrollBar:SetPoint("TOPLEFT", scrollFrame, "TOPRIGHT", 2, -16)
-            scrollFrame.ScrollBar:SetPoint("BOTTOMLEFT", scrollFrame, "BOTTOMRIGHT", 2, 16)
-            scrollFrame.ScrollBar:SetWidth(10)
-        end
-
-        -- EditBox
-        local editBox = CreateFrame("EditBox", nil, scrollFrame)
-        editBox:SetMultiLine(true)
-        editBox:SetAutoFocus(false)
-        NRSKNUI:ApplyThemeFont(editBox, "normal")
-        editBox:SetTextColor(Theme.accent[1], Theme.accent[2], Theme.accent[3], 1)
-        editBox:SetPoint("TOPLEFT", 2, -2)
-        editBox:SetPoint("TOPRIGHT", -2, -2)
-        editBox:EnableMouse(true)
-        scrollFrame:SetScrollChild(editBox)
-
-        -- Set width after scroll child is set
-        editBox:SetWidth(scrollFrame:GetWidth() - 8 > 0 and scrollFrame:GetWidth() - 8 or 200)
-
-        -- Set initial text
-        editBox:SetText(selectedProfile.String or "")
-        editBox:SetCursorPosition(0)
-
-        editBox:SetScript("OnEscapePressed", function(self)
-            self:ClearFocus()
-        end)
-
-        editBox:SetScript("OnTextChanged", function(self, userInput)
-            if userInput and selectedProfileName and db.Profiles[selectedProfileName] then
-                db.Profiles[selectedProfileName].String = self:GetText()
-                -- Sync with attached panel if open
-                SyncWithModule()
-            end
-        end)
-
-        -- Focus highlight
-        editBox:SetScript("OnEditFocusGained", function(self)
-            editContainer:SetBackdropBorderColor(Theme.accent[1], Theme.accent[2], Theme.accent[3], 1)
-            borderR, borderG, borderB = Theme.accent[1], Theme.accent[2], Theme.accent[3]
-        end)
-
-        editBox:SetScript("OnEditFocusLost", function(self)
-            editContainer:SetBackdropBorderColor(Theme.border[1], Theme.border[2], Theme.border[3], 1)
-            borderR, borderG, borderB = Theme.border[1], Theme.border[2], Theme.border[3]
-        end)
-
-        -- Hover animation on editbox
-        editBox:SetScript("OnEnter", function(self)
-            if not self:HasFocus() then
-                AnimateBorder(true)
-            end
-        end)
-
-        editBox:SetScript("OnLeave", function(self)
-            if not self:HasFocus() then
-                AnimateBorder(false)
-            end
-        end)
-
-        -- Make entire container clickable to focus editbox
-        editContainer:EnableMouse(true)
-        editContainer:SetScript("OnMouseDown", function()
-            editBox:SetFocus()
-        end)
-        editContainer:SetScript("OnEnter", function()
-            if not editBox:HasFocus() then
-                AnimateBorder(true)
-            end
-        end)
-        editContainer:SetScript("OnLeave", function()
-            if not editBox:HasFocus() then
-                AnimateBorder(false)
-            end
-        end)
-
-        -- Make scroll frame clickable to focus editbox
-        scrollFrame:EnableMouse(true)
-        scrollFrame:SetScript("OnMouseDown", function()
-            editBox:SetFocus()
-        end)
-
-        row3b:AddWidget(editContainer, 0.45)
-        table_insert(allWidgets, editContainer)
-
-        card3:AddRow(row3b, 140)
-
-        -- Helper text
-        local row3c = GUIFrame:CreateRow(card3.content, 28)
-        local helperText = row3c:CreateFontString(nil, "OVERLAY")
-        helperText:SetPoint("LEFT", row3c, "LEFT", 4, 0)
-        helperText:SetFont(STANDARD_TEXT_FONT, Theme.fontSizeSmall or 10, "OUTLINE")
-        helperText:SetText("CTRL+C to copy, CTRL+V to paste, CTRL+A to select all")
-        helperText:SetTextColor(Theme.textSecondary[1], Theme.textSecondary[2], Theme.textSecondary[3], 1)
-        helperText:SetShadowOffset(0, 0)
-
-        -- Container for helper text
-        local helperContainer = CreateFrame("Frame", nil, row3c)
-        helperContainer:SetHeight(28)
-        helperText:SetParent(helperContainer)
-        helperText:ClearAllPoints()
-        helperText:SetPoint("LEFT", helperContainer, "LEFT", 0, 0)
-
-        row3c:AddWidget(helperContainer, 1)
-        table_insert(allWidgets, helperContainer)
-
-        card3:AddRow(row3c, 28)
+        row3b:AddWidget(profileStringEditor, 1)
+        table_insert(allWidgets, profileStringEditor)
+        card3:AddRow(row3b, 134)
 
         yOffset = yOffset + card3:GetContentHeight() + Theme.paddingSmall
     else
