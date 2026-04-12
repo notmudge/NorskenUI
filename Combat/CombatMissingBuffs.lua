@@ -32,6 +32,7 @@ local GetShapeshiftForm, GetShapeshiftFormInfo = GetShapeshiftForm, GetShapeshif
 local tostring, tonumber = tostring, tonumber
 local C_Spell, C_SpellBook = C_Spell, C_SpellBook
 local C_PetBattles, C_ChallengeMode = C_PetBattles, C_ChallengeMode
+local GetInstanceInfo = GetInstanceInfo
 local isEncounterInProgress = false
 local AuraUtil = AuraUtil
 local UIParent = UIParent
@@ -166,6 +167,12 @@ local currentMissingBuffs = {}
 
 -- Preview state
 local isPreviewActive = false
+
+-- Check if player is in PvP instance (arena or battleground)
+local function IsInPvPInstance()
+    local _, instanceType = GetInstanceInfo()
+    return instanceType == "arena" or instanceType == "pvp"
+end
 
 -- Load condition checker
 local function IsLoadConditionMet(loadCondition)
@@ -1178,7 +1185,7 @@ end
 local function CheckCombatSafeElements()
     if isPreviewActive then return end
     if not MBUFFS.db or not MBUFFS.db.Enabled then return end
-    if UnitIsDeadOrGhost("player") or C_PetBattles.IsInBattle() then return end
+    if UnitIsDeadOrGhost("player") or C_PetBattles.IsInBattle() or IsInPvPInstance() then return end
     ReleaseAllIcons()
     wipe(currentMissingBuffs)
 
@@ -1231,7 +1238,7 @@ local function CheckForMissingBuffs()
         CheckCombatSafeElements()
         return
     end
-    if UnitIsDeadOrGhost("player") or C_PetBattles.IsInBattle() then
+    if UnitIsDeadOrGhost("player") or C_PetBattles.IsInBattle() or IsInPvPInstance() then
         HideAllNotifications()
         return
     end
