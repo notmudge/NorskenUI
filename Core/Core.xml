@@ -6,6 +6,7 @@
     <Script file="Curves.lua" />
     <Script file="Defaults.lua"/>
     <Script file="Globals.lua" />
+    <Script file="Secret.lua" />
     <Script file="CustomOutline.lua" />
     <Script file="PixelPerfect.lua" />
     <Script file="EditMode.lua" />

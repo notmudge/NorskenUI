@@ -7,10 +7,6 @@ local addonName = select(1, ...)
 -- Localization
 local ipairs = ipairs
 local print = print
-local issecrettable = issecrettable
-local canaccessvalue = canaccessvalue
-local issecretvalue = issecretvalue
-local pcall = pcall
 local string_gsub = string.gsub
 local ReloadUI = ReloadUI
 local C_AddOns = C_AddOns
@@ -77,50 +73,6 @@ end
 -- Print: Print message to chat with addon prefix
 function NRSKNUI:Print(msg)
     print(self:ColorTextByTheme("Norsken") .. "UI:|r " .. msg)
-end
-
--- Secret API utilities (based on oUF implementation by Simpy)
--- These help safely handle Blizzard's secret/protected values
-
--- Check if a value is a secret value
-function NRSKNUI:IsSecretValue(value)
-    return issecretvalue and issecretvalue(value)
-end
-
-function NRSKNUI:NotSecretValue(value)
-    return not self:IsSecretValue(value)
-end
-
--- Check if a table is a secret table
-function NRSKNUI:IsSecretTable(object)
-    return issecrettable and issecrettable(object)
-end
-
-function NRSKNUI:NotSecretTable(object)
-    return not self:IsSecretTable(object)
-end
-
--- Check if a value can be accessed (not secret or accessible)
-function NRSKNUI:CanAccessValue(value)
-    return not canaccessvalue or canaccessvalue(value)
-end
-
-function NRSKNUI:CanNotAccessValue(value)
-    return not self:CanAccessValue(value)
-end
-
--- Check if an object has secret values
-function NRSKNUI:HasSecretValues(object)
-    return object and object.HasSecretValues and object:HasSecretValues()
-end
-
-function NRSKNUI:NoSecretValues(object)
-    return not self:HasSecretValues(object)
-end
-
--- Legacy alias for backwards compatibility
-function NRSKNUI:SecretCheck(value)
-    return self:IsSecretValue(value)
 end
 
 -- Setup slash commands
@@ -237,7 +189,7 @@ local PREVIEW_MODULES = {
     "MissingBuffs", "CombatCross", "CombatMessage", "CombatRes",
     "CombatTimer", "PetTexts", "XPBar", "Durability", "DragonRiding", "RaidAlerts",
     "FocusCastbar", "Gateway", "HuntersMark", "BlizzardRM", "RangeChecker", "TimeSpiral", "Recuperate",
-    "BloodlustTracker"
+    "BloodlustTracker", "DungeonCasts"
 }
 
 -- State tracking
