@@ -19,7 +19,6 @@ local pairs = pairs
 local unpack = unpack
 local GetActionInfo = GetActionInfo
 local GetMacroItem = GetMacroItem
-local tonumber = tonumber
 local _G = _G
 local GetCoinTextureString = GetCoinTextureString
 local issecretvalue = issecretvalue
@@ -29,11 +28,12 @@ local UnitTreatAsPlayerForDisplay = UnitTreatAsPlayerForDisplay
 local GetPlayerInfoByGUID = GetPlayerInfoByGUID
 local UnitNameFromGUID = UnitNameFromGUID
 local C_ClassColor = C_ClassColor
-local WHITE_FONT_COLOR = WHITE_FONT_COLOR
 local IsShiftKeyDown = IsShiftKeyDown
-local GetServerTime = GetServerTime
 local UnitName = UnitName
 local InCombatLockdown = InCombatLockdown
+local UnitIsMinion = UnitIsMinion
+local UnitSelectionColor = UnitSelectionColor
+local CreateColor = CreateColor
 
 -- Module state
 local isInitialized = false
@@ -57,13 +57,22 @@ local TOOLTIPS_TO_SKIN = {
     "SettingsTooltip",
 }
 
--- Simple backdrop config
-local BACKDROP = {
-    bgFile = "Interface\\Buttons\\WHITE8X8",
-    edgeFile = "Interface\\Buttons\\WHITE8X8",
-    edgeSize = 1,
-    insets = { left = 0, right = 0, top = 0, bottom = 0 },
-}
+-- Custom backdrop mixin
+-- This prevents errors when frame width/height become secret values
+local backdropMixin = {}
+function backdropMixin:SetBackgroundColor(r, g, b, a)
+    if self.backdropBackground then
+        self.backdropBackground:SetColorTexture(r, g, b, a)
+    end
+end
+
+function backdropMixin:SetBorderColor(r, g, b, a)
+    if self.backdropEdges then
+        for _, edge in pairs(self.backdropEdges) do
+            edge:SetColorTexture(r, g, b, a or 1)
+        end
+    end
+end
 
 function TT:UpdateDB()
     self.db = NRSKNUI.db.profile.Skinning.Tooltips
@@ -77,7 +86,7 @@ end
 -- Cached color for status bar
 local cachedColor
 
--- Get or create backdrop for tooltip
+-- Create custom backdrop for tooltip using textures
 local function GetOrCreateBackdrop(tooltip)
     if not tooltip or tooltip:IsForbidden() then return end
 
@@ -85,21 +94,51 @@ local function GetOrCreateBackdrop(tooltip)
         return tooltipBackdrops[tooltip]
     end
 
-    local backdrop = CreateFrame("Frame", nil, tooltip, "BackdropTemplate")
-    local level = tooltip:GetFrameLevel()
-    -- Check if frame level is a secret before comparing
-    if issecretvalue and issecretvalue(level) then
-        backdrop:SetFrameLevel(0)
-    else
-        backdrop:SetFrameLevel(level > 0 and level - 1 or 0)
-    end
-    backdrop:SetBackdrop(BACKDROP)
-    backdrop:SetBackdropColor(0, 0, 0, 0.8)
-    backdrop:SetBackdropBorderColor(0, 0, 0, 1)
-    backdrop:SetAllPoints(tooltip)
+    -- Mixin custom backdrop methods
+    Mixin(tooltip, backdropMixin)
+    tooltip.backdropEdges = {}
 
-    tooltipBackdrops[tooltip] = backdrop
-    return backdrop
+    -- Create border textures using point-based positioning
+    local borderLeft = tooltip:CreateTexture(nil, "BORDER")
+    borderLeft:SetPoint("TOPLEFT", tooltip, "TOPLEFT", -1, 1)
+    borderLeft:SetPoint("BOTTOMLEFT", tooltip, "BOTTOMLEFT", -1, -1)
+    borderLeft:SetWidth(1)
+    tooltip.backdropEdges.left = borderLeft
+    NRSKNUI:PixelPerfect(borderLeft)
+
+    local borderTop = tooltip:CreateTexture(nil, "BORDER")
+    borderTop:SetPoint("TOPLEFT", tooltip, "TOPLEFT", -1, 1)
+    borderTop:SetPoint("TOPRIGHT", tooltip, "TOPRIGHT", 1, 1)
+    borderTop:SetHeight(1)
+    tooltip.backdropEdges.top = borderTop
+    NRSKNUI:PixelPerfect(borderTop)
+
+    local borderRight = tooltip:CreateTexture(nil, "BORDER")
+    borderRight:SetPoint("TOPRIGHT", tooltip, "TOPRIGHT", 1, 1)
+    borderRight:SetPoint("BOTTOMRIGHT", tooltip, "BOTTOMRIGHT", 1, -1)
+    borderRight:SetWidth(1)
+    tooltip.backdropEdges.right = borderRight
+    NRSKNUI:PixelPerfect(borderRight)
+
+    local borderBottom = tooltip:CreateTexture(nil, "BORDER")
+    borderBottom:SetPoint("BOTTOMLEFT", tooltip, "BOTTOMLEFT", -1, -1)
+    borderBottom:SetPoint("BOTTOMRIGHT", tooltip, "BOTTOMRIGHT", 1, -1)
+    borderBottom:SetHeight(1)
+    tooltip.backdropEdges.bottom = borderBottom
+    NRSKNUI:PixelPerfect(borderBottom)
+
+    -- Create background texture
+    local background = tooltip:CreateTexture(nil, "BACKGROUND")
+    background:SetAllPoints(tooltip)
+    tooltip.backdropBackground = background
+    NRSKNUI:PixelPerfect(background)
+
+    -- Set default colors
+    tooltip:SetBackgroundColor(0, 0, 0, 0.8)
+    tooltip:SetBorderColor(0, 0, 0, 1)
+
+    tooltipBackdrops[tooltip] = tooltip
+    return tooltip
 end
 
 -- Hide default NineSlice border
@@ -166,15 +205,7 @@ end
 local function RegisterTooltipProcessors()
     local NAME_REALM_FORMAT = "%s |cff777777(%s)|r"
 
-    -- Safe helper to get color - avoids secret values
-    local function GetSafeColor(color)
-        if not color or (issecretvalue and issecretvalue(color)) then
-            return WHITE_FONT_COLOR
-        end
-        return color
-    end
-
-    -- Unit name line - class color and realm handling
+    -- Unit name line, class color and realm handling
     TooltipDataProcessor.AddLinePreCall(Enum.TooltipDataLineType.UnitName, function(tooltip, data)
         if tooltip:IsForbidden() or not tooltip:IsTooltipType(Enum.TooltipDataType.Unit) then
             return
@@ -187,41 +218,39 @@ local function RegisterTooltipProcessors()
 
         local name, realm
 
-        if issecretvalue and issecretvalue(unit) then
-            -- Secret unit - use GUID-based lookups
+        if issecretvalue(unit) then
             local _, classToken = GetPlayerInfoByGUID(guid)
             name, realm = UnitNameFromGUID(guid)
 
-            if classToken then
+            if classToken ~= nil then
                 cachedColor = C_ClassColor.GetClassColor(classToken)
             else
-                cachedColor = GetSafeColor(data.leftColor)
+                cachedColor = data.leftColor
             end
-        elseif unit then
-            -- Normal unit
+        elseif unit ~= nil then
             if UnitIsPlayer(unit) or UnitTreatAsPlayerForDisplay(unit) then
                 local _, classToken = UnitClass(unit)
                 cachedColor = C_ClassColor.GetClassColor(classToken)
                 name, realm = UnitNameFromGUID(guid)
+            elseif UnitIsMinion(unit) then
+                cachedColor = CreateColor(UnitSelectionColor(unit, true))
             else
-                cachedColor = GetSafeColor(data.leftColor)
+                cachedColor = data.leftColor
             end
         end
 
         -- Add the name line with proper color
-        local color = cachedColor or WHITE_FONT_COLOR
-        if realm then
-            tooltip:AddLine(NAME_REALM_FORMAT:format(name, realm), color:GetRGB())
-        elseif name then
-            tooltip:AddLine(name, color:GetRGB())
+        if realm ~= nil then
+            tooltip:AddLine(NAME_REALM_FORMAT:format(name, realm), cachedColor:GetRGB())
+        elseif name ~= nil then
+            tooltip:AddLine(name, cachedColor:GetRGB())
         else
-            tooltip:AddLine(data.leftText, (cachedColor or WHITE_FONT_COLOR):GetRGB())
+            tooltip:AddLine(data.leftText, (cachedColor or data.leftColor):GetRGB())
         end
 
         return true -- Replace the original line
     end)
 
-    -- Unit owner line - grey color
     TooltipDataProcessor.AddLinePreCall(Enum.TooltipDataLineType.UnitOwner, function(tooltip, data)
         if tooltip:IsForbidden() or not tooltip:IsTooltipType(Enum.TooltipDataType.Unit) then
             return
@@ -231,10 +260,9 @@ local function RegisterTooltipProcessors()
         return true
     end)
 
-    -- Remove threat line
     TooltipDataProcessor.AddLinePreCall(Enum.TooltipDataLineType.UnitThreat, function(tooltip)
         if not tooltip:IsForbidden() then
-            return true -- Suppress the line
+            return true
         end
     end)
 end
@@ -285,20 +313,6 @@ local SUFFIXES = {
 }
 
 local LINE_FORMAT = "%s: |cff93ccea%s|r"
-
--- Simple time formatter
-local function FormatTime(seconds)
-    if seconds < 60 then
-        return string.format("%ds", seconds)
-    elseif seconds < 3600 then
-        return string.format("%dm %ds", math.floor(seconds / 60), seconds % 60)
-    else
-        local hours = math.floor(seconds / 3600)
-        local mins = math.floor((seconds % 3600) / 60)
-        return string.format("%dh %dm", hours, mins)
-    end
-end
-
 local function addTooltipLine(tooltip, kind, value, forced)
     if tooltip:IsForbidden() or not (forced or IsShiftKeyDown()) then
         return
@@ -323,27 +337,6 @@ end
 
 function dataTypeHandlers:Spell(data)
     addTooltipLine(self, "spell", data.id)
-end
-
-function dataTypeHandlers:Unit(data)
-    if data.guid and not issecretvalue(data.guid) and not C_PlayerInfo.GUIDIsPlayer(data.guid) then
-        if addTooltipLine(self, "npc", C_CreatureInfo.GetCreatureID(data.guid)) then
-            -- show spawn time
-            local _, _, _, _, _, spawnUID = string.split("-", data.guid)
-            if spawnUID then
-                local serverTime = GetServerTime()
-                local spawnEpoch = serverTime - (serverTime % 2 ^ 23)
-                local spawnEpochOffset = bit.band(tonumber(spawnUID, 16), 0x7fffff)
-                local spawnTime = spawnEpoch + spawnEpochOffset
-
-                if spawnTime > serverTime then
-                    spawnTime = spawnTime - ((2 ^ 23) - 1)
-                end
-
-                addTooltipLine(self, "age", FormatTime(serverTime - spawnTime))
-            end
-        end
-    end
 end
 
 function dataTypeHandlers:Currency(data)
@@ -541,7 +534,7 @@ function TT:OnEnable()
     if not self.db.Enabled then return end
     if isInitialized then return end
 
-    -- Override SetTooltipMoney to fix frame errors (only when module is enabled)
+    -- Override SetTooltipMoney to fix frame errors
     function SetTooltipMoney(frame, money, type, prefixText, suffixText)
         frame:AddLine((prefixText or "") .. "  " .. GetCoinTextureString(money) .. " " .. (suffixText or ""), 0, 1, 1)
     end
