@@ -39,6 +39,8 @@
     <Script file="GUITabs\GUI-Combat\GUI-GatewayTab.lua" />
     <Script file="GUITabs\GUI-Combat\GUI-RangeChecker.lua" />
     <Script file="GUITabs\GUI-Combat\GUI-TimeSpiral.lua" />
+    <Script file="GUITabs\GUI-Combat\GUI-FocusCastbar.lua" />
+    <Script file="GUITabs\GUI-Combat\GUI-BloodlustTracker.lua" />
 
     <!-- GUI QoL Tabs -->
     <Script file="GUITabs\GUI-QoL\GUI-AutomationTab.lua" />
@@ -48,12 +50,10 @@
     <Script file="GUITabs\GUI-QoL\GUI-XPBar.lua" />
     <Script file="GUITabs\GUI-QoL\GUI-Durability.lua" />
     <Script file="GUITabs\GUI-QoL\GUI-CooldownStrings.lua" />
-    <Script file="GUITabs\GUI-QoL\GUI-FocusCastbar.lua" />
     <Script file="GUITabs\GUI-QoL\GUI-CVars.lua" />
     <Script file="GUITabs\GUI-QoL\GUI-HuntersMark.lua" />
     <Script file="GUITabs\GUI-QoL\GUI-AuctionHouseFilter.lua" />
     <Script file="GUITabs\GUI-QoL\GUI-Recuperate.lua" />
-    <Script file="GUITabs\GUI-QoL\GUI-BloodlustTracker.lua" />
 
     <!-- GUI Skinning Tabs -->
     <Script file="GUITabs\GUISkinning\GUI-TooltipsTab.lua" />

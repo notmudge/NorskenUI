@@ -36,7 +36,7 @@ GUIFrame.SidebarConfig = {
         {
             id = "profiles_section",
             type = "header",
-            text = "• Profiles",
+            text = "Profiles",
             defaultExpanded = false,
             items = {
                 { id = "ProfileManager", text = "Profile Manager" },
@@ -45,7 +45,7 @@ GUIFrame.SidebarConfig = {
         {
             id = "combat_section",
             type = "header",
-            text = "• Combat",
+            text = "Combat Util",
             defaultExpanded = false,
             items = {
                 { id = "combatTimer",   text = "Combat Timer" },
@@ -58,12 +58,13 @@ GUIFrame.SidebarConfig = {
                 { id = "FocusCastbar",  text = "Focus Castbar" },
                 { id = "RangeChecker",  text = "Range Checker Text" },
                 { id = "TimeSpiral",    text = "Time Spiral" },
+                { id = "missingBuffs",  text = "Missing Buffs" },
             }
         },
         {
             id = "miscellaneous_section",
             type = "header",
-            text = "• Miscellaneous",
+            text = "Class Util",
             defaultExpanded = false,
             items = {
                 { id = "IncarnStacks", text = "Incarn Stacks" },
@@ -72,7 +73,7 @@ GUIFrame.SidebarConfig = {
         {
             id = "qol_section",
             type = "header",
-            text = "• Quality of Life",
+            text = "Quality of Life",
             defaultExpanded = false,
             items = {
                 { id = "MiscVars",           text = "CVars" },
@@ -81,7 +82,6 @@ GUIFrame.SidebarConfig = {
                 { id = "CooldownStrings",    text = "CDM Profile Strings" },
                 { id = "whisperSounds",      text = "Whisper Sounds" },
                 { id = "DragonRiding",       text = "Dragon Riding UI" },
-                { id = "missingBuffs",       text = "Missing Buffs" },
                 { id = "XPBar",              text = "XP Bar" },
                 { id = "Durability",         text = "Durability Util" },
                 { id = "HuntersMark",        text = "Hunters Mark Missing" },
@@ -93,7 +93,7 @@ GUIFrame.SidebarConfig = {
         {
             id = "skinning_section",
             type = "header",
-            text = "• Skinning",
+            text = "Blizzard Skinning",
             defaultExpanded = false,
             elvUIDisabled = true,
             items = {
@@ -113,7 +113,7 @@ GUIFrame.SidebarConfig = {
         {
             id = "customskin_section",
             type = "header",
-            text = "• Custom Skin",
+            text = "Custom Skinning",
             defaultExpanded = false,
             elvUIDisabled = true,
             items = {
@@ -125,7 +125,7 @@ GUIFrame.SidebarConfig = {
         {
             id = "dungeons_section",
             type = "header",
-            text = "• Dungeons",
+            text = "Dungeon Util",
             defaultExpanded = false,
             items = {
                 { id = "InstanceReset",             text = "Instance Reset" },
