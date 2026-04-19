@@ -15,4 +15,5 @@
     <Script file="AuraBuffs.lua" />
     <Script file="AuraDebuffs.lua" />
     <Script file="AuraExternals.lua" />
+    <Script file="UIWidgets.lua" />
 </Ui>
