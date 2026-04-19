@@ -61,24 +61,33 @@ GUIFrame.SidebarConfig = {
             }
         },
         {
+            id = "miscellaneous_section",
+            type = "header",
+            text = "• Miscellaneous",
+            defaultExpanded = false,
+            items = {
+                { id = "IncarnStacks", text = "Incarn Stacks" },
+            }
+        },
+        {
             id = "qol_section",
             type = "header",
             text = "• Quality of Life",
             defaultExpanded = false,
             items = {
-                { id = "MiscVars",        text = "CVars" },
-                { id = "Automation",      text = "Automation" },
-                { id = "CopyAnything",    text = "Copy Anything" },
-                { id = "CooldownStrings", text = "CDM Profile Strings" },
-                { id = "whisperSounds",   text = "Whisper Sounds" },
-                { id = "DragonRiding",    text = "Dragon Riding UI" },
-                { id = "missingBuffs",    text = "Missing Buffs" },
-                { id = "XPBar",           text = "XP Bar" },
-                { id = "Durability",      text = "Durability Util" },
-                { id = "HuntersMark",     text = "Hunters Mark Missing" },
+                { id = "MiscVars",           text = "CVars" },
+                { id = "Automation",         text = "Automation" },
+                { id = "CopyAnything",       text = "Copy Anything" },
+                { id = "CooldownStrings",    text = "CDM Profile Strings" },
+                { id = "whisperSounds",      text = "Whisper Sounds" },
+                { id = "DragonRiding",       text = "Dragon Riding UI" },
+                { id = "missingBuffs",       text = "Missing Buffs" },
+                { id = "XPBar",              text = "XP Bar" },
+                { id = "Durability",         text = "Durability Util" },
+                { id = "HuntersMark",        text = "Hunters Mark Missing" },
                 { id = "AuctionHouseFilter", text = "AH Filter" },
-                { id = "Recuperate",       text = "Recuperate Button" },
-                { id = "BloodlustTracker", text = "Bloodlust Tracker" },
+                { id = "Recuperate",         text = "Recuperate Button" },
+                { id = "BloodlustTracker",   text = "Bloodlust Tracker" },
             }
         },
         {
@@ -102,44 +111,35 @@ GUIFrame.SidebarConfig = {
             }
         },
         {
-            id = "dungeons_section",
-            type = "header",
-            text = "• Dungeons",
-            defaultExpanded = false,
-            items = {
-                { id = "InstanceReset",               text = "Instance Reset" },
-                { id = "HealerMana",                  text = "Healer Mana" },
-                { id = "DungeonCasts",                text = "Dungeon Casts" },
-                { id = "Dungeon_Settings",            text = "Timers Settings" },
-                { id = "Dungeon_MagistersTerrace",    text = "Magisters' Terrace" },
-                { id = "Dungeon_MaisaraCaverns",      text = "Maisara Caverns" },
-                { id = "Dungeon_NexusPointXenas",     text = "Nexus-Point Xenas" },
-                { id = "Dungeon_WindrunnerSpire",     text = "Windrunner Spire" },
-                { id = "Dungeon_AlgetharAcademy",     text = "Algeth'ar Academy" },
-                { id = "Dungeon_PitOfSaron",          text = "Pit of Saron" },
-                { id = "Dungeon_SeatOfTriumvirate",   text = "Seat of the Triumvirate" },
-                { id = "Dungeon_Skyreach",            text = "Skyreach" },
-            }
-        },
-        {
             id = "customskin_section",
             type = "header",
             text = "• Custom Skin",
             defaultExpanded = false,
             elvUIDisabled = true,
             items = {
-                { id = "CustomSkin_Buffs",      text = "Buffs" },
-                { id = "CustomSkin_Debuffs",    text = "Debuffs" },
-                { id = "CustomSkin_Externals",  text = "External Buffs" },
+                { id = "CustomSkin_Buffs",     text = "Buffs" },
+                { id = "CustomSkin_Debuffs",   text = "Debuffs" },
+                { id = "CustomSkin_Externals", text = "External Buffs" },
             }
         },
         {
-            id = "miscellaneous_section",
+            id = "dungeons_section",
             type = "header",
-            text = "• Miscellaneous",
+            text = "• Dungeons",
             defaultExpanded = false,
             items = {
-                { id = "IncarnStacks", text = "Incarn Stacks" },
+                { id = "InstanceReset",             text = "Instance Reset" },
+                { id = "HealerMana",                text = "Healer Mana" },
+                { id = "DungeonCasts",              text = "Dungeon Casts" },
+                { id = "Dungeon_Settings",          text = "Timers Settings" },
+                { id = "Dungeon_MagistersTerrace",  text = "Magisters' Terrace" },
+                { id = "Dungeon_MaisaraCaverns",    text = "Maisara Caverns" },
+                { id = "Dungeon_NexusPointXenas",   text = "Nexus-Point Xenas" },
+                { id = "Dungeon_WindrunnerSpire",   text = "Windrunner Spire" },
+                { id = "Dungeon_AlgetharAcademy",   text = "Algeth'ar Academy" },
+                { id = "Dungeon_PitOfSaron",        text = "Pit of Saron" },
+                { id = "Dungeon_SeatOfTriumvirate", text = "Seat of the Triumvirate" },
+                { id = "Dungeon_Skyreach",          text = "Skyreach" },
             }
         },
     },
@@ -335,7 +335,8 @@ function GUIFrame:ApplyThemeColors()
             frame.header.logoN:SetVertexColor(Theme.accent[1], Theme.accent[2], Theme.accent[3], 0.7)
         end
         if frame.header.logoAuras then
-            frame.header.logoAuras:SetVertexColor(Theme.textSecondary[1], Theme.textSecondary[2], Theme.textSecondary[3], 1)
+            frame.header.logoAuras:SetVertexColor(Theme.textSecondary[1], Theme.textSecondary[2], Theme.textSecondary[3],
+                1)
         end
     end
 
