@@ -256,9 +256,17 @@ end
 -- Preview mode support for GUI and Edit Mode
 -- state: "missing", "dead", "passive" (default: "missing")
 function PET:ShowPreview(state)
+    local frameJustCreated = false
     if not self.frame then
         self:CreatePetTexts()
         self:RegWithEditMode()
+        frameJustCreated = true
+    end
+
+    -- Apply position and font settings (especially important when frame was just created)
+    if frameJustCreated then
+        NRSKNUI:ApplyFramePosition(self.frame, self.db.Position, self.db)
+        NRSKNUI:ApplyFontToText(self.text, self.db.FontFace, self.db.FontSize, self.db.FontOutline, {})
     end
 
     -- Store preview state
@@ -295,6 +303,12 @@ end
 
 -- Module update func
 function PET:ApplySettings()
+    -- If preview should be active but frame doesn't exist, create it via ShowPreview
+    -- This handles non-pet classes where OnEnable returns early
+    if not self.frame and NRSKNUI.PreviewManager and NRSKNUI.PreviewManager:IsPreviewActive() and self.db.Enabled then
+        self:ShowPreview()
+    end
+
     if not self.frame then return end
 
     -- Update position settings

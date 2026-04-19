@@ -63,6 +63,10 @@ GUIFrame:RegisterContent("PetTexts", function(scrollChild, yOffset)
             db.Enabled = checked
             ApplyModuleState(checked)
             UpdateAllWidgetStates()
+            -- Show preview when enabling (works for non-pet classes too)
+            if checked and mod then
+                mod:ShowPreview()
+            end
         end,
         true, "Pet Status Texts", "On", "Off"
     )
