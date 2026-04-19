@@ -682,7 +682,7 @@ function DT:CheckMessage(trigger, text)
     if not trigger.message or trigger.message == "" then return true end
     if not text then return false end
 
-    -- Check for secret values (WoW security feature)
+    -- Check for secret values
     if issecretvalue and issecretvalue(text) then return false end
     if issecretvalue and issecretvalue(trigger.message) then return false end
 

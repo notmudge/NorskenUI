@@ -66,11 +66,17 @@
     <Script file="GUITabs\GUISkinning\GUI-ActionBarsTab.lua" />
     <Script file="GUITabs\GUISkinning\GUI-UICleanup.lua" />
     <Script file="GUITabs\GUISkinning\GUI-BlizzardRaidmanager.lua" />
+    <Script file="GUITabs\GUISkinning\GUI-UIWidgetsTab.lua" />
     <Include file="GUITabs\GUISkinning\CustomSkin\CustomSkin.xml" />
 
     <!-- GUI Dungeons Tabs -->
+    <Script file="GUITabs\GUI-Dungeons\GUI-InstanceReset.lua" />
+    <Script file="GUITabs\GUI-Dungeons\GUI-HealerMana.lua" />
     <Script file="GUITabs\GUI-Dungeons\GUI-DungeonTimers.lua" />
     <Script file="GUITabs\GUI-Dungeons\GUI-DungeonCasts.lua" />
+
+    <!-- GUI Miscellaneous Tabs -->
+    <Script file="GUITabs\GUI-Miscellaneous\GUI-IncarnStacks.lua" />
 
     <Script file="GUIMain\GUI-MainFrame.lua" />
 </Ui>

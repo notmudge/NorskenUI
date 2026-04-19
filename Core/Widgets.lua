@@ -15,7 +15,7 @@ NRSKNUI.Media = {
 -- Icon zoom helper bcs blizz border uggy
 -- Example Usage: NRSKNUI:ApplyZoom(auraIcon, 0.3)
 
----@param obj Frame
+---@param obj Texture
 ---@param zoom number
 -- Helper function to apply a zoom effect to an icon texture
 function NRSKNUI:ApplyZoom(obj, zoom)
