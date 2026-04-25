@@ -23,9 +23,8 @@ GUIFrame.SidebarConfig = {
                 { id = "combatTimer",   text = "Combat Timer" },
                 { id = "combatCross",   text = "Combat Cross" },
                 { id = "battleRes",     text = "Combat Res" },
-                { id = "cursorCircle",  text = "Cursor Circle" },
                 { id = "combatMessage", text = "Combat Texts" },
-                { id = "PetTexts",      text = "Pet Status Texts" },
+                { id = "cursorCircle",  text = "Cursor Circle" },
                 { id = "gateway",       text = "Gateway Alert" },
                 { id = "FocusCastbar",  text = "Focus Castbar" },
                 { id = "RangeChecker",  text = "Range Checker Text" },
@@ -40,6 +39,8 @@ GUIFrame.SidebarConfig = {
             defaultExpanded = false,
             items = {
                 { id = "IncarnStacks", text = "Incarn Stacks" },
+                { id = "HuntersMark",  text = "Hunters Mark Missing" },
+                { id = "PetTexts",     text = "Pet Status Texts" },
             }
         },
         {
@@ -56,7 +57,6 @@ GUIFrame.SidebarConfig = {
                 { id = "DragonRiding",       text = "Dragon Riding UI" },
                 { id = "XPBar",              text = "XP Bar" },
                 { id = "Durability",         text = "Durability Util" },
-                { id = "HuntersMark",        text = "Hunters Mark Missing" },
                 { id = "AuctionHouseFilter", text = "AH Filter" },
                 { id = "Recuperate",         text = "Recuperate Button" },
             }

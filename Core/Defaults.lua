@@ -13,7 +13,7 @@ local Defaults = {
         -- All theme presets are defined in AddonTheme.lua
         Theme = {
             mode           = "preset", -- Theme mode: preset, class, or custom
-            selectedPreset = "NUI v2",   -- Selected preset theme name
+            selectedPreset = "NUI v2", -- Selected preset theme name
             customColors   = {},       -- Custom color overrides (used in custom mode)
 
             -- Font settings (shared across all modes)
@@ -44,28 +44,36 @@ local Defaults = {
         TimeSpiral = {
             Enabled = true,
             IconSize = 40,
+
             ShowText = true,
             TextLabel = "FREE",
             TextColor = { 0, 1, 0, 1 },
-
-            -- Glow
-            GlowEnabled = true,
-            GlowType = "proc", -- pixel, autocast, button, proc
-            GlowColor = { 0, 1, 0, 1 },
-
-            -- Label Font
             FontFace = "Expressway",
             FontSize = 14,
             FontOutline = "SOFTOUTLINE",
+            FontShadow = {
+                Enabled = false,
+                Color = { 0, 0, 0, 0 },
+                OffsetX = 0,
+                OffsetY = 0,
+            },
 
-            -- Timer Text
             ShowTimer = true,
             TimerTextColor = { 1, 1, 1, 1 },
-            TimerFontFace = "Expressway",
             TimerFontSize = 16,
-            TimerFontOutline = "SOFTOUTLINE",
 
-            -- Position
+            GlowEnabled = true,
+            GlowType = "proc",
+            GlowColor = { 0, 1, 0, 1 },
+            GlowLines = 8,
+            GlowFrequency = 0.25,
+            GlowLength = 8,
+            GlowThickness = 2,
+            GlowBorder = false,
+            GlowScale = 1,
+            GlowStartAnim = false,
+            GlowDuration = 1,
+
             Strata = "HIGH",
             anchorFrameType = "UIPARENT",
             ParentFrame = "UIParent",
@@ -185,25 +193,46 @@ local Defaults = {
                 XOffset = 0,              -- X offset
                 YOffset = 172,            -- Y offset
             },
-            Duration = 2.5,               -- Message display duration
             Spacing = 4,                  -- Vertical spacing between messages
+            Grow = "DOWN",                -- Grow direction: DOWN or UP
+            Duration = 2.5,               -- How long messages are shown (seconds)
             -- Enter Combat Message
             EnterCombat = {
-                Enabled = true,                 -- Enable enter combat message
-                Text = "+ COMBAT +",            -- Text on entering combat
-                Color = { 0.929, 0.259, 0, 1 }, -- Color on entering combat
+                Enabled = true,
+                Text = "+ COMBAT +",
+                Color = { 0.929, 0.259, 0, 1 },
+                FontSize = 16,
             },
             -- Exit Combat Message
             ExitCombat = {
-                Enabled = true,                 -- Enable exit combat message
-                Text = "- COMBAT -",            -- Text on exiting combat
-                Color = { 0.788, 1, 0.627, 1 }, -- Color on exiting combat
+                Enabled = true,
+                Text = "- COMBAT -",
+                Color = { 0.788, 1, 0.627, 1 },
+                FontSize = 16,
             },
             -- No Target Warning (persistent while in combat with no target)
             NoTarget = {
-                Enabled = true,           -- Enable no target warning
-                Text = "NO TARGET",       -- Warning text
-                Color = { 1, 0.4, 0, 1 }, -- Warning color (yellow/orange)
+                Enabled = true,
+                Text = "NO TARGET",
+                Color = { 1, 0.4, 0, 1 },
+                FontSize = 16,
+            },
+            -- Focus Target Died
+            FocusDeath = {
+                Enabled = true,
+                Text = "FOCUS DIED",
+                Color = { 1, 0.3, 0.3, 1 },
+                FontSize = 16,
+            },
+            -- Party/Raid Death Announcement
+            PartyDeath = {
+                Enabled = true,
+                UseClassColor = true,
+                TextFormat = "%name DIED",
+                TextColor = { 1, 1, 1, 1 },
+                CombatOnly = true,
+                LoadCondition = "ANYGROUP",
+                FontSize = 16,
             },
         },
 
@@ -603,7 +632,7 @@ local Defaults = {
             },
             CooldownStrings = {
                 Enabled = true,
-                Profiles = {},     -- { [name] = { String = "", Created = timestamp, SpecID = number } }
+                Profiles = {}, -- { [name] = { String = "", Created = timestamp, SpecID = number } }
             },
             FocusCastbar = {
                 Enabled = true,

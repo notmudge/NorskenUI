@@ -260,23 +260,40 @@ function EditMode:SetupDragHandlers(overlay, element)
         end
 
         local finalX, finalY
+        local frameWidth = targetFrame:GetWidth()
+        local frameHeight = targetFrame:GetHeight()
 
-        -- Horizontal Calculation
-        if anchorTo:find("LEFT") then
-            finalX = newCenterX - (targetFrame:GetWidth() / 2) - parentLeft
-        elseif anchorTo:find("RIGHT") then
-            finalX = newCenterX + (targetFrame:GetWidth() / 2) - (parentLeft + parentWidth)
-        else -- CENTER
-            finalX = newCenterX - (parentLeft + parentWidth / 2)
+        -- Calculate frame's anchor point position based on anchorFrom
+        local frameAnchorX = newCenterX
+        local frameAnchorY = newCenterY
+
+        if anchorFrom:find("LEFT") then
+            frameAnchorX = newCenterX - frameWidth / 2
+        elseif anchorFrom:find("RIGHT") then
+            frameAnchorX = newCenterX + frameWidth / 2
         end
 
-        -- Vertical Calculation
-        if anchorTo:find("TOP") then
-            finalY = newCenterY + (targetFrame:GetHeight() / 2) - (parentBottom + parentHeight)
-        elseif anchorTo:find("BOTTOM") then
-            finalY = newCenterY - (targetFrame:GetHeight() / 2) - parentBottom
+        if anchorFrom:find("TOP") then
+            frameAnchorY = newCenterY + frameHeight / 2
+        elseif anchorFrom:find("BOTTOM") then
+            frameAnchorY = newCenterY - frameHeight / 2
+        end
+
+        -- Calculate offset from parent's anchor point to frame's anchor point
+        if anchorTo:find("LEFT") then
+            finalX = frameAnchorX - parentLeft
+        elseif anchorTo:find("RIGHT") then
+            finalX = frameAnchorX - (parentLeft + parentWidth)
         else -- CENTER
-            finalY = newCenterY - (parentBottom + parentHeight / 2)
+            finalX = frameAnchorX - (parentLeft + parentWidth / 2)
+        end
+
+        if anchorTo:find("TOP") then
+            finalY = frameAnchorY - (parentBottom + parentHeight)
+        elseif anchorTo:find("BOTTOM") then
+            finalY = frameAnchorY - parentBottom
+        else -- CENTER
+            finalY = frameAnchorY - (parentBottom + parentHeight / 2)
         end
 
         -- Save using the ORIGINAL anchors, edit mode does not change anchor points

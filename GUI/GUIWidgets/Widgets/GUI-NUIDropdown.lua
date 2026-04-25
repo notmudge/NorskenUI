@@ -54,6 +54,13 @@ function NUIDropdownMixin:SetValue(value, silent)
         self._selectedText:SetText(tostring(value))
     end
 
+    local optionColor = self._optionColors and self._optionColors[value]
+    if optionColor then
+        self._selectedText:SetTextColor(optionColor.r or optionColor[1], optionColor.g or optionColor[2], optionColor.b or optionColor[3], 1)
+    else
+        self._selectedText:SetTextColor(Theme.accent[1], Theme.accent[2], Theme.accent[3], 1)
+    end
+
     if self._isFontPreview then
         local fontPath = NRSKNUI:GetFontPath(value)
         SafeApplyPreviewFont(self._selectedText, fontPath, FONT_PREVIEW_SIZE)
@@ -93,6 +100,7 @@ end
 ---@param newOptions table
 function NUIDropdownMixin:UpdateOptions(newOptions)
     self._normalizedOptions = {}
+    self._optionColors = {}
     self._orderedKeys = nil
     if type(newOptions) == "table" then
         if newOptions[1] and type(newOptions[1]) == "table" and (newOptions[1].key or newOptions[1].value) then
@@ -100,6 +108,9 @@ function NUIDropdownMixin:UpdateOptions(newOptions)
             for _, opt in ipairs(newOptions) do
                 local optKey = opt.key or opt.value
                 self._normalizedOptions[optKey] = opt.text
+                if opt.color then
+                    self._optionColors[optKey] = opt.color
+                end
                 table_insert(self._orderedKeys, optKey)
             end
         else
@@ -316,6 +327,7 @@ function GUIFrame:CreateDropdown(parent, labelText, config)
     dropdownButton.arrow = arrow
 
     row._normalizedOptions = {}
+    row._optionColors = {}
     row._orderedKeys = nil
     if type(options) == "table" then
         if options[1] and type(options[1]) == "table" and (options[1].value or options[1].key) then
@@ -323,6 +335,9 @@ function GUIFrame:CreateDropdown(parent, labelText, config)
             for _, opt in ipairs(options) do
                 local optKey = opt.value or opt.key
                 row._normalizedOptions[optKey] = opt.text
+                if opt.color then
+                    row._optionColors[optKey] = opt.color
+                end
                 table_insert(row._orderedKeys, optKey)
             end
         else
@@ -594,6 +609,13 @@ function GUIFrame:CreateDropdown(parent, labelText, config)
             row._selectedText:SetText(tostring(value))
         end
 
+        local optionColor = row._optionColors and row._optionColors[value]
+        if optionColor then
+            row._selectedText:SetTextColor(optionColor.r or optionColor[1], optionColor.g or optionColor[2], optionColor.b or optionColor[3], 1)
+        else
+            row._selectedText:SetTextColor(Theme.accent[1], Theme.accent[2], Theme.accent[3], 1)
+        end
+
         if row._isFontPreview then
             local fontPath = NRSKNUI:GetFontPath(value)
             SafeApplyPreviewFont(row._selectedText, fontPath, FONT_PREVIEW_SIZE)
@@ -624,8 +646,13 @@ function GUIFrame:CreateDropdown(parent, labelText, config)
                 SafeApplyPreviewFont(btn._text, fontPath, FONT_PREVIEW_SIZE)
             end
 
+            local optionColor = row._optionColors and row._optionColors[key]
             local function UpdateItemColor()
-                if row._currentValue == btn._itemValue then
+                local isSelected = row._currentValue == btn._itemValue
+                if optionColor then
+                    local alpha = isSelected and 1 or 0.7
+                    btn._text:SetTextColor(optionColor.r or optionColor[1], optionColor.g or optionColor[2], optionColor.b or optionColor[3], alpha)
+                elseif isSelected then
                     btn._text:SetTextColor(Theme.accent[1], Theme.accent[2], Theme.accent[3], 1)
                 else
                     btn._text:SetTextColor(Theme.textSecondary[1], Theme.textSecondary[2], Theme.textSecondary[3], 1)
@@ -724,10 +751,11 @@ function GUIFrame:CreateDropdown(parent, labelText, config)
             CloseDropdown()
         else
             dropdownList._logicalParent = dropdownList:GetParent()
-            dropdownList:SetParent(NRSKNUI.GUIOverlay)
+            local overlayParent = NRSKNUI.GUIOverlay or UIParent
+            dropdownList:SetParent(overlayParent)
+            dropdownList:SetFrameStrata("TOOLTIP")
             dropdownList:ClearAllPoints()
             dropdownList:SetPoint("TOPLEFT", dropdownButton, "BOTTOMLEFT", 0, -2)
-            dropdownList:SetPoint("TOPRIGHT", dropdownButton, "BOTTOMRIGHT", 0, -2)
 
             if searchable then
                 searchText = ""
@@ -739,13 +767,29 @@ function GUIFrame:CreateDropdown(parent, labelText, config)
             local extraHeight = searchable and (SEARCH_BOX_HEIGHT + SEARCH_PADDING * 2) or 0
             local contentHeight = (#filteredKeys > 0 and (#filteredKeys * ITEM_HEIGHT) or ITEM_HEIGHT) + extraHeight
             local maxHeight = math_min(contentHeight, MAX_DROPDOWN_HEIGHT)
+            local needsScrollbar = contentHeight > MAX_DROPDOWN_HEIGHT
 
             startHeight = 1
             targetHeight = maxHeight
 
+            local buttonWidth = dropdownButton:GetWidth()
+            if buttonWidth and buttonWidth > 0 then
+                dropdownList:SetWidth(buttonWidth)
+                scrollChild:SetWidth(buttonWidth - (needsScrollbar and 12 or 0))
+            end
+
+            if needsScrollbar then
+                EnsureScrollbar()
+                if scrollbar then
+                    scrollbar:Show()
+                    scrollbar:SetMinMaxValues(0, contentHeight - maxHeight)
+                    scrollbar:SetValue(0)
+                end
+            elseif scrollbar then
+                scrollbar:Hide()
+            end
+
             dropdownList:SetHeight(targetHeight)
-            scrollChild:SetWidth(scrollFrame:GetWidth())
-            UpdateScroll()
             dropdownList:Show()
             dropdownList:SetHeight(startHeight)
 
@@ -783,6 +827,10 @@ function GUIFrame:CreateDropdown(parent, labelText, config)
     if selected and row._normalizedOptions[selected] then
         row._selectedText:SetText(row._normalizedOptions[selected])
         row._currentValue = selected
+        local optionColor = row._optionColors[selected]
+        if optionColor then
+            row._selectedText:SetTextColor(optionColor.r or optionColor[1], optionColor.g or optionColor[2], optionColor.b or optionColor[3], 1)
+        end
         if row._isFontPreview then
             local fontPath = NRSKNUI:GetFontPath(selected)
             SafeApplyPreviewFont(row._selectedText, fontPath, FONT_PREVIEW_SIZE)
@@ -790,6 +838,10 @@ function GUIFrame:CreateDropdown(parent, labelText, config)
     elseif selected ~= nil then
         row._selectedText:SetText(tostring(selected))
         row._currentValue = selected
+        local optionColor = row._optionColors[selected]
+        if optionColor then
+            row._selectedText:SetTextColor(optionColor.r or optionColor[1], optionColor.g or optionColor[2], optionColor.b or optionColor[3], 1)
+        end
         if row._isFontPreview then
             local fontPath = NRSKNUI:GetFontPath(selected)
             SafeApplyPreviewFont(row._selectedText, fontPath, FONT_PREVIEW_SIZE)

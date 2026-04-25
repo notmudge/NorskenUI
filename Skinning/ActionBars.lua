@@ -728,6 +728,19 @@ local function SetupBonusBarOverride(bar1Container, db)
         local container = self.container
         if not container then return end
 
+        -- Clear range overlays and reset keybind colors on Bar1 buttons when state changes
+        for i = 1, 12 do
+            local button = _G["ActionButton" .. i]
+            if button then
+                if button._nrsknRangeOverlay then
+                    button._nrsknRangeOverlay:Hide()
+                end
+                if button.HotKey and button.HotKey._nrsknColorHooked then
+                    getmetatable(button.HotKey).__index.SetVertexColor(button.HotKey, 1, 1, 1, 1)
+                end
+            end
+        end
+
         -- Check if override is enabled
         if not container._bonusBarOverrideEnabled then
             container._bonusBarActive = false

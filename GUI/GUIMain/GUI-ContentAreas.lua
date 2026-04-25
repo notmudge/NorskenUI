@@ -367,14 +367,23 @@ function NRSKNUI.GUI.CreateMiniSidebar(container, options)
 
     local function UpdateSelectionVisuals()
         for _, btn in ipairs(activeButtons) do
-            if btn._itemKey == selectedKey then
+            local isSelected = btn._itemKey == selectedKey
+            if isSelected then
                 btn._selected:Show()
                 btn._accentBar:Show()
-                btn._label:SetTextColor(Theme.accent[1], Theme.accent[2], Theme.accent[3], 1)
             else
                 btn._selected:Hide()
                 btn._accentBar:Hide()
-                btn._label:SetTextColor(Theme.textSecondary[1], Theme.textSecondary[2], Theme.textSecondary[3], 1)
+            end
+
+            if renderItem and btn._itemData then
+                renderItem(btn, btn._itemData, isSelected)
+            else
+                if isSelected then
+                    btn._label:SetTextColor(Theme.accent[1], Theme.accent[2], Theme.accent[3], 1)
+                else
+                    btn._label:SetTextColor(Theme.textSecondary[1], Theme.textSecondary[2], Theme.textSecondary[3], 1)
+                end
             end
         end
     end

@@ -1,419 +1,217 @@
--- NorskenUI namespace
 ---@class NRSKNUI
 local NRSKNUI = select(2, ...)
 local GUIFrame = NRSKNUI.GUIFrame
 local Theme = NRSKNUI.Theme
-local LSM = NRSKNUI.LSM
 
--- Localization
 local table_insert = table.insert
-local pairs, ipairs = pairs, ipairs
+local ipairs = ipairs
 
--- Get module reference
-local function GetModule()
-    return NorskenUI:GetModule("TimeSpiral", true)
-end
-
--- Register Time Spiral tab content
 GUIFrame:RegisterContent("TimeSpiral", function(scrollChild, yOffset)
     local db = NRSKNUI.db and NRSKNUI.db.profile.TimeSpiral
-    if not db then
-        local errorCard = GUIFrame:CreateCard(scrollChild, "Error", yOffset)
-        errorCard:AddLabel("Database not available")
-        return yOffset + errorCard:GetContentHeight() + Theme.paddingMedium
-    end
+    if not db then return GUIFrame:ShowDBError(scrollChild, yOffset) end
 
-    local TSP = GetModule()
-    local allWidgets = {}
-    local glowWidgets = {}
-    local textWidgets = {}
-    local timerWidgets = {}
+    ---@type TimeSpiral?
+    local TSP = NorskenUI and NorskenUI:GetModule("TimeSpiral", true)
+    local manager = GUIFrame:CreateWidgetStateManager()
+    local postUpdateCallbacks = {}
+    local textSubWidgets = {}
+    local timerSubWidgets = {}
+    local allCards = {}
+
+    local function RelayoutCards()
+        local y = allCards[1] and allCards[1]:GetNextOffset() or yOffset
+        for i = 2, #allCards do
+            local card = allCards[i]
+            card:ClearAllPoints()
+            card:SetPoint("TOPLEFT", scrollChild, "TOPLEFT", Theme.paddingSmall, -y)
+            card:SetPoint("RIGHT", scrollChild, "RIGHT", -Theme.paddingSmall, 0)
+            card._yOffset = y
+            y = card:GetNextOffset()
+        end
+    end
 
     local function ApplySettings()
-        if TSP and TSP.ApplySettings then
-            TSP:ApplySettings()
+        if TSP then TSP:ApplySettings() end
+    end
+
+    local function UpdateTextState()
+        for _, widget in ipairs(textSubWidgets) do
+            if widget.SetEnabled then widget:SetEnabled(db.ShowText) end
         end
     end
 
-    local function ApplyModuleState(enabled)
-        if not TSP then return end
-        db.Enabled = enabled
-        if enabled then
-            NorskenUI:EnableModule("TimeSpiral")
-        else
-            NorskenUI:DisableModule("TimeSpiral")
-        end
-    end
-
-    local function UpdateGlowWidgetStates()
-        local glowEnabled = db.GlowEnabled ~= false
-        for _, widget in ipairs(glowWidgets) do
-            if widget.SetEnabled then
-                widget:SetEnabled(glowEnabled)
-            end
-        end
-    end
-
-    local function UpdateTextWidgetStates()
-        local textEnabled = db.ShowText ~= false
-        for _, widget in ipairs(textWidgets) do
-            if widget.SetEnabled then
-                widget:SetEnabled(textEnabled)
-            end
-        end
-    end
-
-    local function UpdateTimerWidgetStates()
-        local timerEnabled = db.ShowTimer ~= false
-        for _, widget in ipairs(timerWidgets) do
-            if widget.SetEnabled then
-                widget:SetEnabled(timerEnabled)
-            end
+    local function UpdateTimerState()
+        for _, widget in ipairs(timerSubWidgets) do
+            if widget.SetEnabled then widget:SetEnabled(db.ShowTimer) end
         end
     end
 
     local function UpdateAllWidgetStates()
-        local mainEnabled = db.Enabled ~= false
-
-        for _, widget in ipairs(allWidgets) do
-            if widget.SetEnabled then
-                widget:SetEnabled(mainEnabled)
+        manager:UpdateAll(db.Enabled)
+        if db.Enabled then
+            for _, callback in ipairs(postUpdateCallbacks) do
+                callback()
             end
-        end
-
-        -- Update sub-toggles only if main is enabled
-        if mainEnabled then
-            UpdateGlowWidgetStates()
-            UpdateTextWidgetStates()
-            UpdateTimerWidgetStates()
         end
     end
 
-    ----------------------------------------------------------------
-    -- Card 1: Time Spiral Enable
-    ----------------------------------------------------------------
     local card1 = GUIFrame:CreateCard(scrollChild, "Time Spiral Tracker", yOffset)
+    table_insert(allCards, card1)
 
-    local row1 = GUIFrame:CreateRow(card1.content, 36)
+    local row1 = GUIFrame:CreateRow(card1.content, Theme.rowHeightLast)
     local enableCheck = GUIFrame:CreateCheckbox(row1, "Enable Time Spiral Tracker", {
-        value = db.Enabled ~= false,
+        value = db.Enabled,
         callback = function(checked)
             db.Enabled = checked
-            ApplyModuleState(checked)
+            if TSP then
+                if checked then NorskenUI:EnableModule("TimeSpiral") else NorskenUI:DisableModule("TimeSpiral") end
+            end
             UpdateAllWidgetStates()
         end,
         msgPopup = true,
         msgText = "Time Spiral Tracker",
-        msgOn = "On",
-        msgOff = "Off"
     })
-    row1:AddWidget(enableCheck, 0.5)
-    card1:AddRow(row1, 36)
+    row1:AddWidget(enableCheck, 1)
+    card1:AddRow(row1, Theme.rowHeightLast, 0)
 
-    yOffset = yOffset + card1:GetContentHeight() + Theme.paddingSmall
+    yOffset = card1:GetNextOffset()
 
-    ----------------------------------------------------------------
-    -- Card 2: Display & Glow Settings
-    ----------------------------------------------------------------
-    local card2 = GUIFrame:CreateCard(scrollChild, "Display & Glow Settings", yOffset)
-    table_insert(allWidgets, card2)
+    local appearanceCard = GUIFrame:CreateCard(scrollChild, "Appearance", yOffset)
+    table_insert(allCards, appearanceCard)
+    manager:Register(appearanceCard, "all")
 
-    -- Icon Size Slider
-    local row2a = GUIFrame:CreateRow(card2.content, 40)
-    local iconSizeSlider = GUIFrame:CreateSlider(row2a, "Icon Size", {
+    local rowIcon = GUIFrame:CreateRow(appearanceCard.content, Theme.rowHeight)
+    local iconSizeSlider = GUIFrame:CreateSlider(rowIcon, "Icon Size", {
         min = 20,
         max = 100,
         step = 1,
-        value = db.IconSize or 50,
+        value = db.IconSize,
         callback = function(val)
             db.IconSize = val
             ApplySettings()
         end
     })
-    row2a:AddWidget(iconSizeSlider, 1)
-    table_insert(allWidgets, iconSizeSlider)
-    card2:AddRow(row2a, 40)
+    rowIcon:AddWidget(iconSizeSlider, 1)
+    manager:Register(iconSizeSlider, "all")
+    appearanceCard:AddRow(rowIcon, Theme.rowHeight)
 
-    -- Separator
-    local rowSep1 = GUIFrame:CreateRow(card2.content, 8)
-    local sep1 = GUIFrame:CreateSeparator(rowSep1)
-    rowSep1:AddWidget(sep1, 1)
-    table_insert(allWidgets, sep1)
-    card2:AddRow(rowSep1, 8)
+    local sepRow1 = GUIFrame:CreateRow(appearanceCard.content, Theme.rowHeightSeparator)
+    local sep1 = GUIFrame:CreateSeparator(sepRow1)
+    sepRow1:AddWidget(sep1, 1)
+    appearanceCard:AddRow(sepRow1, Theme.rowHeightSeparator)
 
-    -- Enable Glow Checkbox
-    local row2b = GUIFrame:CreateRow(card2.content, 40)
-    local enableGlowCheck = GUIFrame:CreateCheckbox(row2b, "Enable Glow Effect", {
-        value = db.GlowEnabled ~= false,
-        callback = function(checked)
-            db.GlowEnabled = checked
-            UpdateGlowWidgetStates()
-            ApplySettings()
-        end
-    })
-    row2b:AddWidget(enableGlowCheck, 0.5)
-    table_insert(allWidgets, enableGlowCheck)
-    card2:AddRow(row2b, 40)
-
-    -- Glow Type Dropdown and Glow Color Picker (same row)
-    local row2c = GUIFrame:CreateRow(card2.content, 36)
-    local glowTypeList = {
-        { key = "pixel",    text = "Pixel Border" },
-        { key = "autocast", text = "Auto Cast" },
-        { key = "button",   text = "Button Glow" },
-        { key = "proc",     text = "Proc Glow" },
-    }
-    local glowTypeDropdown = GUIFrame:CreateDropdown(row2c, "Glow Type", {
-        options = glowTypeList,
-        value = db.GlowType or "pixel",
-        callback = function(key)
-            db.GlowType = key
-            ApplySettings()
-        end
-    })
-    row2c:AddWidget(glowTypeDropdown, 0.5)
-    table_insert(allWidgets, glowTypeDropdown)
-    table_insert(glowWidgets, glowTypeDropdown)
-
-    local glowColorPicker = GUIFrame:CreateColorPicker(row2c, "Glow Color", {
-        color = db.GlowColor or { 0.95, 0.95, 0.32, 1 },
-        callback = function(r, g, b, a)
-            db.GlowColor = { r, g, b, a }
-            ApplySettings()
-        end
-    })
-    row2c:AddWidget(glowColorPicker, 0.5)
-    table_insert(allWidgets, glowColorPicker)
-    table_insert(glowWidgets, glowColorPicker)
-    card2:AddRow(row2c, 36)
-
-    yOffset = yOffset + card2:GetContentHeight() + Theme.paddingSmall
-
-    ----------------------------------------------------------------
-    -- Card 3: Text Settings
-    ----------------------------------------------------------------
-    local card3 = GUIFrame:CreateCard(scrollChild, "Text Settings", yOffset)
-    table_insert(allWidgets, card3)
-
-    -- Show Text Checkbox and Text Color Picker (same row)
-    local row3a = GUIFrame:CreateRow(card3.content, 40)
-    local showTextCheck = GUIFrame:CreateCheckbox(row3a, "Show Text Label", {
-        value = db.ShowText ~= false,
+    local rowText1 = GUIFrame:CreateRow(appearanceCard.content, Theme.rowHeight)
+    local showTextCheck = GUIFrame:CreateCheckbox(rowText1, "Show Text Label", {
+        value = db.ShowText,
         callback = function(checked)
             db.ShowText = checked
-            UpdateTextWidgetStates()
             ApplySettings()
+            UpdateTextState()
         end
     })
-    row3a:AddWidget(showTextCheck, 0.5)
-    table_insert(allWidgets, showTextCheck)
+    rowText1:AddWidget(showTextCheck, 0.5)
+    manager:Register(showTextCheck, "all")
 
-    local textColorPicker = GUIFrame:CreateColorPicker(row3a, "Text Color", {
-        color = db.TextColor or { 1, 1, 1, 1 },
+    local textColorPicker = GUIFrame:CreateColorPicker(rowText1, "Text Color", {
+        color = db.TextColor,
         callback = function(r, g, b, a)
             db.TextColor = { r, g, b, a }
             ApplySettings()
         end
     })
-    row3a:AddWidget(textColorPicker, 0.5)
-    table_insert(allWidgets, textColorPicker)
-    table_insert(textWidgets, textColorPicker)
-    card3:AddRow(row3a, 40)
+    rowText1:AddWidget(textColorPicker, 0.5)
+    manager:Register(textColorPicker, "all")
+    table_insert(textSubWidgets, textColorPicker)
+    appearanceCard:AddRow(rowText1, Theme.rowHeight)
 
-    -- Text Label EditBox
-    local row3b = GUIFrame:CreateRow(card3.content, 40)
-    local textLabelEdit = GUIFrame:CreateEditBox(row3b, "Text Label", {
-        value = db.TextLabel or "FREE MOVE",
+    local rowText2 = GUIFrame:CreateRow(appearanceCard.content, Theme.rowHeight)
+    local textLabelEdit = GUIFrame:CreateEditBox(rowText2, "Label Text", {
+        value = db.TextLabel,
         callback = function(text)
             db.TextLabel = text
             ApplySettings()
         end
     })
-    row3b:AddWidget(textLabelEdit, 1)
-    table_insert(allWidgets, textLabelEdit)
-    table_insert(textWidgets, textLabelEdit)
-    card3:AddRow(row3b, 40)
+    rowText2:AddWidget(textLabelEdit, 1)
+    manager:Register(textLabelEdit, "all")
+    table_insert(textSubWidgets, textLabelEdit)
+    appearanceCard:AddRow(rowText2, Theme.rowHeight)
+    table_insert(postUpdateCallbacks, UpdateTextState)
 
-    -- Separator
-    local rowSep2 = GUIFrame:CreateRow(card3.content, 8)
-    local sep2 = GUIFrame:CreateSeparator(rowSep2)
-    rowSep2:AddWidget(sep2, 1)
-    table_insert(allWidgets, sep2)
-    card3:AddRow(rowSep2, 8)
+    local sepRow2 = GUIFrame:CreateRow(appearanceCard.content, Theme.rowHeightSeparator)
+    local sep2 = GUIFrame:CreateSeparator(sepRow2)
+    sepRow2:AddWidget(sep2, 1)
+    appearanceCard:AddRow(sepRow2, Theme.rowHeightSeparator)
 
-    -- Font lookup
-    local fontList = {}
-    if LSM then
-        for name in pairs(LSM:HashTable("font")) do fontList[name] = name end
-    else
-        fontList["Friz Quadrata TT"] = "Friz Quadrata TT"
-    end
-
-    -- Font Face and Size
-    local row3c = GUIFrame:CreateRow(card3.content, 40)
-    local fontDropdown = GUIFrame:CreateDropdown(row3c, "Font", {
-        options = fontList,
-        value = db.FontFace or "MEERES FONT",
-        callback = function(key)
-            db.FontFace = key
-            ApplySettings()
-        end,
-        searchable = true,
-        isFontPreview = true
-    })
-    row3c:AddWidget(fontDropdown, 0.5)
-    table_insert(allWidgets, fontDropdown)
-    table_insert(textWidgets, fontDropdown)
-
-    -- Font Size Slider
-    local fontSizeSlider = GUIFrame:CreateSlider(card3.content, "Font Size", {
-        min = 8,
-        max = 36,
-        step = 1,
-        value = db.FontSize or 13,
-        labelWidth = 60,
-        callback = function(val)
-            db.FontSize = val
-            ApplySettings()
-        end
-    })
-    row3c:AddWidget(fontSizeSlider, 0.5)
-    table_insert(allWidgets, fontSizeSlider)
-    table_insert(textWidgets, fontSizeSlider)
-    card3:AddRow(row3c, 40)
-
-    -- Font Outline Dropdown
-    local row3d = GUIFrame:CreateRow(card3.content, 36)
-    local outlineList = {
-        { key = "NONE",         text = "None" },
-        { key = "OUTLINE",      text = "Outline" },
-        { key = "THICKOUTLINE", text = "Thick" },
-        { key = "SOFTOUTLINE",  text = "Soft" },
-    }
-    local outlineDropdown = GUIFrame:CreateDropdown(row3d, "Outline", {
-        options = outlineList,
-        value = db.FontOutline or "OUTLINE",
-        callback = function(key)
-            db.FontOutline = key
-            ApplySettings()
-        end
-    })
-    row3d:AddWidget(outlineDropdown, 1)
-    table_insert(allWidgets, outlineDropdown)
-    table_insert(textWidgets, outlineDropdown)
-    card3:AddRow(row3d, 36)
-
-    yOffset = yOffset + card3:GetContentHeight() + Theme.paddingSmall
-
-    ----------------------------------------------------------------
-    -- Card 4: Timer Settings
-    ----------------------------------------------------------------
-    local card4 = GUIFrame:CreateCard(scrollChild, "Timer Settings", yOffset)
-    table_insert(allWidgets, card4)
-
-    -- Show Timer Checkbox and Timer Color Picker (same row)
-    local row4a = GUIFrame:CreateRow(card4.content, 40)
-    local showTimerCheck = GUIFrame:CreateCheckbox(row4a, "Show Timer Text", {
-        value = db.ShowTimer ~= false,
+    local rowTimer1 = GUIFrame:CreateRow(appearanceCard.content, Theme.rowHeightLast)
+    local showTimerCheck = GUIFrame:CreateCheckbox(rowTimer1, "Show Timer", {
+        value = db.ShowTimer,
         callback = function(checked)
             db.ShowTimer = checked
-            UpdateTimerWidgetStates()
             ApplySettings()
+            UpdateTimerState()
         end
     })
-    row4a:AddWidget(showTimerCheck, 0.5)
-    table_insert(allWidgets, showTimerCheck)
+    rowTimer1:AddWidget(showTimerCheck, 0.5)
+    manager:Register(showTimerCheck, "all")
 
-    local timerColorPicker = GUIFrame:CreateColorPicker(row4a, "Timer Color", {
-        color = db.TimerTextColor or { 1, 1, 1, 1 },
+    local timerColorPicker = GUIFrame:CreateColorPicker(rowTimer1, "Timer Color", {
+        color = db.TimerTextColor,
         callback = function(r, g, b, a)
             db.TimerTextColor = { r, g, b, a }
             ApplySettings()
         end
     })
-    row4a:AddWidget(timerColorPicker, 0.5)
-    table_insert(allWidgets, timerColorPicker)
-    table_insert(timerWidgets, timerColorPicker)
-    card4:AddRow(row4a, 40)
+    rowTimer1:AddWidget(timerColorPicker, 0.5)
+    manager:Register(timerColorPicker, "all")
+    table_insert(timerSubWidgets, timerColorPicker)
+    appearanceCard:AddRow(rowTimer1, Theme.rowHeightLast, 0)
+    table_insert(postUpdateCallbacks, UpdateTimerState)
 
-    -- Separator
-    local rowSep3 = GUIFrame:CreateRow(card4.content, 8)
-    local sep3 = GUIFrame:CreateSeparator(rowSep3)
-    rowSep3:AddWidget(sep3, 1)
-    table_insert(allWidgets, sep3)
-    card4:AddRow(rowSep3, 8)
+    yOffset = appearanceCard:GetNextOffset()
 
-    -- Timer Font Face and Size
-    local row4b = GUIFrame:CreateRow(card4.content, 40)
-    local timerFontDropdown = GUIFrame:CreateDropdown(row4b, "Font", {
-        options = fontList,
-        value = db.TimerFontFace or "Expressway",
-        callback = function(key)
-            db.TimerFontFace = key
-            ApplySettings()
-        end,
-        searchable = true,
-        isFontPreview = true
+    local fontCard, fontOffset, fontWidgets = GUIFrame:CreateFontSettingsCard(scrollChild, yOffset, {
+        title = "Font Settings",
+        db = db,
+        dbKeys = { fontFace = "FontFace", fontOutline = "FontOutline" },
+        fontSizes = {
+            { label = "Label Size", dbKey = "FontSize" },
+            { label = "Timer Size", dbKey = "TimerFontSize" },
+        },
+        includeSoftOutline = true,
+        onChangeCallback = ApplySettings,
     })
-    row4b:AddWidget(timerFontDropdown, 0.5)
-    table_insert(allWidgets, timerFontDropdown)
-    table_insert(timerWidgets, timerFontDropdown)
+    table_insert(allCards, fontCard)
+    manager:Register(fontCard, "all")
+    manager:RegisterGroup(fontWidgets, "all")
+    if fontCard.UpdateShadowState then table_insert(postUpdateCallbacks, fontCard.UpdateShadowState) end
 
-    -- Timer Font Size Slider
-    local timerFontSizeSlider = GUIFrame:CreateSlider(card4.content, "Font Size", {
-        min = 8,
-        max = 36,
-        step = 1,
-        value = db.TimerFontSize or 16,
-        labelWidth = 60,
-        callback = function(val)
-            db.TimerFontSize = val
-            ApplySettings()
-        end
+    yOffset = fontOffset
+
+    local glowCard, glowOffset, glowWidgets = GUIFrame:CreateGlowSettingsCard(scrollChild, yOffset, {
+        db = db,
+        onChangeCallback = ApplySettings,
+        onHeightChange = RelayoutCards,
     })
-    row4b:AddWidget(timerFontSizeSlider, 0.5)
-    table_insert(allWidgets, timerFontSizeSlider)
-    table_insert(timerWidgets, timerFontSizeSlider)
-    card4:AddRow(row4b, 40)
+    table_insert(allCards, glowCard)
+    manager:Register(glowCard, "all")
+    manager:RegisterGroup(glowWidgets, "all")
+    if glowCard.updateTypeVisibility then table_insert(postUpdateCallbacks, glowCard.updateTypeVisibility) end
 
-    -- Timer Font Outline Dropdown
-    local row4c = GUIFrame:CreateRow(card4.content, 36)
-    local timerOutlineDropdown = GUIFrame:CreateDropdown(row4c, "Outline", {
-        options = outlineList,
-        value = db.TimerFontOutline or "SOFTOUTLINE",
-        callback = function(key)
-            db.TimerFontOutline = key
-            ApplySettings()
-        end
-    })
-    row4c:AddWidget(timerOutlineDropdown, 1)
-    table_insert(allWidgets, timerOutlineDropdown)
-    table_insert(timerWidgets, timerOutlineDropdown)
-    card4:AddRow(row4c, 36)
+    yOffset = glowOffset
 
-    yOffset = yOffset + card4:GetContentHeight() + Theme.paddingSmall
-
-    ----------------------------------------------------------------
-    -- Card 5: Position Settings
-    ----------------------------------------------------------------
-    local card5, newOffset = GUIFrame:CreatePositionCard(scrollChild, yOffset, {
+    local posCard, posOffset = GUIFrame:CreatePositionCard(scrollChild, yOffset, {
         db = db,
         showAnchorFrameType = true,
         showStrata = true,
-        onChangeCallback = ApplySettings,
+        onChangeCallback = function() if TSP then TSP:ApplyPosition() end end,
     })
+    table_insert(allCards, posCard)
+    manager:Register(posCard, "all")
 
-    if card5.positionWidgets then
-        for _, widget in ipairs(card5.positionWidgets) do
-            table_insert(allWidgets, widget)
-        end
-    end
-    table_insert(allWidgets, card5)
+    yOffset = posOffset
 
-    yOffset = newOffset
-
-    -- Apply initial widget states
     UpdateAllWidgetStates()
-    yOffset = yOffset - (Theme.paddingSmall * 2)
+
     return yOffset
 end)

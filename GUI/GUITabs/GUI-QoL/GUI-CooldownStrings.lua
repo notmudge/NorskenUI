@@ -119,7 +119,8 @@ GUIFrame:RegisterPanel("CooldownStrings", function(container)
     local function GetSpecDropdownOptions()
         local options = {}
         for _, spec in ipairs(allSpecList) do
-            table_insert(options, { key = spec.key, text = spec.text })
+            local color = spec.class and RAID_CLASS_COLORS[spec.class]
+            table_insert(options, { key = spec.key, text = spec.text, color = color })
         end
         return options
     end
@@ -132,7 +133,7 @@ GUIFrame:RegisterPanel("CooldownStrings", function(container)
         getItems = GetAllProfiles,
         getItemKey = function(item) return item.name end,
 
-        renderItem = function(btn, item)
+        renderItem = function(btn, item, isSelected)
             local specInfo = item.specInfo
             if specInfo and specInfo.icon then
                 btn._icon:SetTexture(specInfo.icon)
@@ -143,7 +144,14 @@ GUIFrame:RegisterPanel("CooldownStrings", function(container)
             btn._label:SetText(item.name)
             if specInfo and specInfo.class and RAID_CLASS_COLORS[specInfo.class] then
                 local cc = RAID_CLASS_COLORS[specInfo.class]
-                btn._label:SetTextColor(cc.r, cc.g, cc.b, 1)
+                local alpha = isSelected and 1 or 0.7
+                btn._label:SetTextColor(cc.r, cc.g, cc.b, alpha)
+            else
+                if isSelected then
+                    btn._label:SetTextColor(Theme.accent[1], Theme.accent[2], Theme.accent[3], 1)
+                else
+                    btn._label:SetTextColor(Theme.textSecondary[1], Theme.textSecondary[2], Theme.textSecondary[3], 1)
+                end
             end
         end,
 

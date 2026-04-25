@@ -1,138 +1,259 @@
--- NorskenUI namespace
 ---@class NRSKNUI
 local NRSKNUI = select(2, ...)
 
--- Check for addon object
 if not NorskenUI then
     error("CombatMessage: Addon object not initialized. Check file load order!")
     return
 end
 
--- Create module
 ---@class CombatMessage: AceModule, AceEvent-3.0
 local CM = NorskenUI:NewModule("CombatMessage", "AceEvent-3.0")
 
--- Localization
 local CreateFrame = CreateFrame
-local UnitExists, UnitIsDeadOrGhost = UnitExists, UnitIsDeadOrGhost
+local UnitExists, UnitIsDead, UnitIsDeadOrGhost = UnitExists, UnitIsDead, UnitIsDeadOrGhost
 local InCombatLockdown = InCombatLockdown
 local ipairs, pairs = ipairs, pairs
-local UIParent = UIParent
+local UnitInParty, UnitInRaid = UnitInParty, UnitInRaid
+local IsInRaid, IsInGroup, GetNumGroupMembers = IsInRaid, IsInGroup, GetNumGroupMembers
+local UnitClass, UnitIsUnit = UnitClass, UnitIsUnit
+local UnitTokenFromGUID, UnitGUID = UnitTokenFromGUID, UnitGUID
+local C_ClassColor = C_ClassColor
 local C_Timer = C_Timer
+local GetTime = GetTime
+local max = math.max
 
--- Module state
-CM.container = nil
 CM.messageFrames = {}
 CM.activeMessages = {}
-CM.messageGeneration = 0
-CM.noTargetCheckGeneration = 0
-CM.isPreview = false
-CM.inCombat = false
 
--- Update db, used for profile changes
+local MESSAGE_TYPES = {
+    "enterCombat",
+    "exitCombat",
+    "noTarget",
+    "partyDeath",
+    "focusDeath",
+}
+
+local function GetUnitFromGUID(guid)
+    if not guid then return nil end
+    if NRSKNUI:IsSecretValue(guid) then return nil end
+
+    if UnitTokenFromGUID then
+        local token = UnitTokenFromGUID(guid)
+        if token then return token end
+    end
+
+    if UnitGUID("player") == guid then return "player" end
+
+    if IsInRaid() then
+        for i = 1, 40 do
+            local u = "raid" .. i
+            if UnitGUID(u) == guid then return u end
+        end
+    elseif IsInGroup() then
+        for i = 1, 4 do
+            local u = "party" .. i
+            if UnitGUID(u) == guid then return u end
+        end
+    end
+
+    return nil
+end
+
+local GROW_ANCHORS = {
+    DOWN = { childPoint = "TOP", containerAnchor = "TOP", yDir = -1 },
+    UP = { childPoint = "BOTTOM", containerAnchor = "BOTTOM", yDir = 1 },
+}
+
+local function IsLoadConditionMet(loadCondition)
+    if not loadCondition or loadCondition == "ALWAYS" then return true end
+    local groupSize = GetNumGroupMembers()
+    local inRaid = IsInRaid()
+    local inGroup = groupSize > 0
+
+    if loadCondition == "ANYGROUP" then
+        return inGroup
+    elseif loadCondition == "PARTY" then
+        return inGroup and not inRaid
+    elseif loadCondition == "RAID" then
+        return inRaid
+    elseif loadCondition == "NOGROUP" then
+        return not inGroup
+    end
+
+    return true
+end
+
+local function FormatDeathMessage(format, name, nameColor, textColor)
+    local textHex = NRSKNUI:RGBAToHex(textColor[1], textColor[2], textColor[3])
+    local textStart = "|cFF" .. textHex
+    local textEnd = "|r"
+
+    local coloredName
+    if nameColor.WrapTextInColorCode then
+        coloredName = nameColor:WrapTextInColorCode(name)
+    else
+        local nameHex = NRSKNUI:RGBAToHex(nameColor[1], nameColor[2], nameColor[3])
+        coloredName = "|cFF" .. nameHex .. name .. "|r"
+    end
+
+    local before, after = format:match("^(.-)%%name(.*)$")
+    if before then
+        return textStart .. before .. textEnd .. coloredName .. textStart .. after .. textEnd
+    else
+        return textStart .. format .. textEnd
+    end
+end
+
 function CM:UpdateDB()
     self.db = NRSKNUI.db.profile.CombatMessage
 end
 
--- Module init bruv
 function CM:OnInitialize()
     self:UpdateDB()
     self:SetEnabledState(false)
 end
 
--- Message types
-local MESSAGE_TYPES = {
-    "enterCombat",
-    "exitCombat",
-    "noTarget",
-}
-
--- Get message config
-local function GetMessageConfig(db, msgType)
-    if msgType == "enterCombat" then
-        local cfg = db.EnterCombat or {}
-        return cfg.Enabled ~= false,
-            cfg.Text or "+ COMBAT +",
-            cfg.Color or { 0.929, 0.259, 0, 1 }
-    elseif msgType == "exitCombat" then
-        local cfg = db.ExitCombat or {}
-        return cfg.Enabled ~= false,
-            cfg.Text or "- COMBAT -",
-            cfg.Color or { 0.788, 1, 0.627, 1 }
-    elseif msgType == "noTarget" then
-        local cfg = db.NoTarget or {}
-        return cfg.Enabled == true,
-            cfg.Text or "NO TARGET",
-            cfg.Color or { 1, 0.8, 0, 1 }
-    end
-    return false, "", { 1, 1, 1, 1 }
+local function GetDbKey(msgType)
+    return msgType and (msgType:sub(1, 1):upper() .. msgType:sub(2))
 end
 
--- Create container frame
+local function GetMessageConfig(db, msgType)
+    local key = GetDbKey(msgType)
+    local cfg = key and db[key]
+    if not cfg then return false, "", { 1, 1, 1, 1 } end
+    return cfg.Enabled, cfg.Text or "", cfg.Color or { 1, 1, 1, 1 }
+end
+
+local function FormatPartyDeathMessage(db, unitID, fallbackName)
+    local name = NRSKNUI:GetSafeUnitName(unitID) or fallbackName
+    if not name then return nil end
+
+    local _, classFilename = UnitClass(unitID)
+
+    local nameColor = { 1, 1, 1, 1 }
+    if db.PartyDeath.UseClassColor and classFilename and not NRSKNUI:IsSecretValue(classFilename) then
+        local classColor = C_ClassColor.GetClassColor(classFilename)
+        if classColor then nameColor = classColor end
+    end
+
+    local format = db.PartyDeath.TextFormat or "%name DIED"
+    return FormatDeathMessage(format, name, nameColor, db.PartyDeath.TextColor)
+end
+
+function CM:ApplyContainerPosition()
+    if not self.container then return end
+
+    local grow = GROW_ANCHORS[self.db.Grow] or GROW_ANCHORS.DOWN
+    local parent = NRSKNUI:ResolveAnchorFrame(self.db.anchorFrameType, self.db.ParentFrame)
+
+    self.container:ClearAllPoints()
+    self.container:SetPoint(
+        grow.containerAnchor,
+        parent,
+        self.db.Position.AnchorTo or "CENTER",
+        self.db.Position.XOffset or 0,
+        self.db.Position.YOffset or 0
+    )
+    self.container:SetFrameStrata(self.db.Strata or "HIGH")
+end
+
 function CM:CreateContainer()
     if self.container then return end
 
     local container = CreateFrame("Frame", "NRSKNUI_CombatMessageContainer", UIParent)
-    container:SetSize(200, 100)
-    NRSKNUI:ApplyFramePosition(container, self.db.Position, self.db)
+    container:SetSize(100, 20)
     container:SetFrameLevel(100)
 
     self.container = container
+    self:ApplyContainerPosition()
 end
 
--- Create or get a message frame
 function CM:GetMessageFrame(msgType)
-    if self.messageFrames[msgType] then
-        return self.messageFrames[msgType]
-    end
+    if self.messageFrames[msgType] then return self.messageFrames[msgType] end
+
     local frame = CreateFrame("Frame", nil, self.container)
-    frame:SetSize(200, 30)
+    frame:SetSize(200, 20)
     frame:Hide()
 
     local text = frame:CreateFontString(nil, "OVERLAY")
-    local fontPath = NRSKNUI:GetFontPath(self.db.FontFace)
-    text:SetAllPoints(frame)
+    text:SetPoint("CENTER")
     text:SetJustifyH("CENTER")
     text:SetJustifyV("MIDDLE")
-    text:SetFont(fontPath, self.db.FontSize, "")
-
-    -- Setting some min sizes for cleaner edit mode
-    local width, height = math.max(text:GetWidth(), 150), math.max(text:GetHeight(), 14)
-    frame:SetSize(width + 5, height)
 
     frame.text = text
     frame.msgType = msgType
     frame.generation = 0
+    frame.width = 200
+    frame.height = 20
 
     self.messageFrames[msgType] = frame
-    NRSKNUI:ApplyFontToText(frame.text, self.db.FontFace, self.db.FontSize, self.db.FontOutline, self.db.FontShadow)
+    self:UpdateFrameFont(frame, msgType)
 
     return frame
 end
 
--- Arrange visible messages vertically
-function CM:ArrangeMessages()
-    local spacing = self.db.Spacing or 4
-    local yOffset = 0
+function CM:UpdateFrameFont(frame, msgType)
+    local key = GetDbKey(msgType)
+    local fontSize = (key and self.db[key] and self.db[key].FontSize) or self.db.FontSize
+    NRSKNUI:ApplyFontToText(frame.text, self.db.FontFace, fontSize, self.db.FontOutline, self.db.FontShadow)
+end
 
+function CM:SetMessageContent(frame, msgText, color, msgType)
+    if msgType then
+        self:UpdateFrameFont(frame, msgType)
+    end
+    frame.text:SetText("")
+    frame.text:SetText(msgText)
+    frame.text:SetTextColor(color[1], color[2], color[3], color[4])
+
+    local textWidth = frame.text:GetStringWidth()
+    local textHeight = frame.text:GetStringHeight()
+
+    local width = max(textWidth + 10, 100)
+    local height = max(textHeight, 12)
+    frame.width = width
+    frame.height = height
+    frame:SetSize(width, height)
+end
+
+function CM:ArrangeMessages()
+    if not self.container then return end
+
+    local grow = GROW_ANCHORS[self.db.Grow] or GROW_ANCHORS.DOWN
+    local spacing = self.db.Spacing
+    local yDir = grow.yDir
+
+    local visibleFrames = {}
     for _, msgType in ipairs(MESSAGE_TYPES) do
         local frame = self.messageFrames[msgType]
         if frame and frame:IsShown() then
-            frame:ClearAllPoints()
-            frame:SetPoint("TOP", self.container, "TOP", 0, -yOffset)
-            yOffset = yOffset + frame:GetHeight() + spacing
+            visibleFrames[#visibleFrames + 1] = frame
         end
     end
 
-    -- Update container height
-    if self.container then
-        self.container:SetHeight(math.max(30, yOffset - spacing))
+    local yOffset = 0
+    local maxWidth = 0
+    local totalHeight = 0
+
+    for i, frame in ipairs(visibleFrames) do
+        frame:ClearAllPoints()
+        frame:SetPoint(grow.childPoint, self.container, grow.containerAnchor, 0, yOffset * yDir)
+        yOffset = yOffset + frame.height + spacing
+
+        if frame.width > maxWidth then maxWidth = frame.width end
+        totalHeight = totalHeight + frame.height
+        if i < #visibleFrames then totalHeight = totalHeight + spacing end
+    end
+
+    if #visibleFrames > 0 then
+        self.container:SetSize(max(maxWidth, 100), totalHeight)
+    else
+        self.container:SetSize(100, 20)
     end
 end
 
--- Show a flash message
-function CM:ShowFlashMessage(msgType)
-    if not self.db or self.db.Enabled == false then return end
+function CM:ShowFlashMessage(msgType, customText, customColor)
+    if not self.db.Enabled then return end
     if self.isPreview then return end
 
     local enabled, msgText, color = GetMessageConfig(self.db, msgType)
@@ -141,35 +262,27 @@ function CM:ShowFlashMessage(msgType)
     local frame = self:GetMessageFrame(msgType)
     if not frame then return end
 
-    local duration = self.db.Duration or 2.5
     frame.generation = frame.generation + 1
     local myGeneration = frame.generation
 
-    -- Set text and color
-    frame.text:SetText(msgText)
-    frame.text:SetTextColor(color[1] or 1, color[2] or 1, color[3] or 1, color[4] or 1)
+    self:SetMessageContent(frame, customText or msgText, customColor or color, msgType)
 
-    -- Show and arrange
     frame:SetAlpha(1)
     frame:Show()
     self.activeMessages[msgType] = true
     self:ArrangeMessages()
 
-    -- Hide after duration (no fade to avoid soft outline recursion)
-    local function HideIfCurrent()
+    C_Timer.After(self.db.Duration, function()
         if frame.generation == myGeneration and not self.isPreview then
             frame:Hide()
             self.activeMessages[msgType] = nil
             self:ArrangeMessages()
         end
-    end
-
-    C_Timer.After(duration, HideIfCurrent)
+    end)
 end
 
--- Show a persistent message
 function CM:ShowPersistentMessage(msgType)
-    if not self.db or self.db.Enabled == false then return end
+    if not self.db.Enabled then return end
     if self.isPreview then return end
 
     local enabled, msgText, color = GetMessageConfig(self.db, msgType)
@@ -178,18 +291,14 @@ function CM:ShowPersistentMessage(msgType)
     local frame = self:GetMessageFrame(msgType)
     if not frame then return end
 
-    -- Set text and color
-    frame.text:SetText(msgText)
-    frame.text:SetTextColor(color[1] or 1, color[2] or 1, color[3] or 1, color[4] or 1)
+    self:SetMessageContent(frame, msgText, color, msgType)
 
-    -- Show and arrange
     frame:SetAlpha(1)
     frame:Show()
     self.activeMessages[msgType] = true
     self:ArrangeMessages()
 end
 
--- Hide a persistent message
 function CM:HidePersistentMessage(msgType)
     local frame = self.messageFrames[msgType]
     if frame then
@@ -199,22 +308,19 @@ function CM:HidePersistentMessage(msgType)
     end
 end
 
--- Check if we have target or not in combat
 function CM:CheckNoTarget()
-    if not self.db or self.db.Enabled == false then return end
+    if not self.db.Enabled then return end
     if self.isPreview then return end
 
-    local noTargetEnabled = self.db.NoTarget and self.db.NoTarget.Enabled
+    local noTargetEnabled = self.db.NoTarget.Enabled
 
-    -- Don't show NO TARGET if player is dead or ghost
     if UnitIsDeadOrGhost("player") then
         self:HidePersistentMessage("noTarget")
         return
     end
 
     if self.inCombat and noTargetEnabled then
-        -- Increment generation to invalidate any pending checks
-        self.noTargetCheckGeneration = self.noTargetCheckGeneration + 1
+        self.noTargetCheckGeneration = (self.noTargetCheckGeneration or 0) + 1
         local myGeneration = self.noTargetCheckGeneration
 
         C_Timer.After(0.1, function()
@@ -235,78 +341,122 @@ function CM:CheckNoTarget()
     end
 end
 
--- Event Handlers
-function CM:OnEnterCombat()
-    self.inCombat = true
-    self:ShowFlashMessage("enterCombat")
-    self:CheckNoTarget()
+function CM:CheckFocusDeath(deadGUID)
+    if not self.db.FocusDeath.Enabled then return end
+
+    local focusGUID = UnitGUID("focus")
+    if not focusGUID then return end
+    if NRSKNUI:IsSecretValue(focusGUID) then return end
+    if NRSKNUI:IsSecretValue(deadGUID) then return end
+    if focusGUID ~= deadGUID then return end
+
+    self:ShowFlashMessage("focusDeath")
 end
 
-function CM:OnExitCombat()
-    self.inCombat = false
-    self.noTargetCheckGeneration = self.noTargetCheckGeneration + 1
-    self:HidePersistentMessage("noTarget")
-    self:ShowFlashMessage("exitCombat")
-end
+function CM:OnUnitDied(_, deadGUID)
+    if not self.db.Enabled then return end
+    if self.isPreview then return end
 
-function CM:OnTargetChanged()
-    self:CheckNoTarget()
-end
+    self:CheckFocusDeath(deadGUID)
 
-function CM:OnPlayerDead()
-    self.noTargetCheckGeneration = self.noTargetCheckGeneration + 1
-    self:HidePersistentMessage("noTarget")
-end
+    if not self.db.PartyDeath.Enabled then return end
+    if not IsLoadConditionMet(self.db.PartyDeath.LoadCondition) then return end
+    if self.db.PartyDeath.CombatOnly and not self.inCombat then return end
 
--- Settings Application
-function CM:ApplySettings()
-    if not self.container then return end
-    NRSKNUI:ApplyFramePosition(self.container, self.db.Position, self.db)
-
-    -- Update font settings for all message frames
-    for _, frame in pairs(self.messageFrames) do
-        NRSKNUI:ApplyFontToText(frame.text, self.db.FontFace, self.db.FontSize, self.db.FontOutline, self.db.FontShadow)
+    local now = GetTime()
+    if now > self.deathThrottle.resetTime then
+        self.deathThrottle.count = 0
+        self.deathThrottle.resetTime = now + 10
     end
 
-    -- Update preview content if in preview mode
+    if self.deathThrottle.count >= 4 then return end
+
+    local unitID = GetUnitFromGUID(deadGUID)
+    if not unitID then return end
+    if NRSKNUI:IsSecretValue(unitID) then return end
+    if UnitIsUnit(unitID, "player") then return end
+
+    local isDead = UnitIsDead(unitID)
+    if NRSKNUI:IsSecretValue(isDead) then isDead = true end
+    if not isDead then return end
+
+    if not UnitInParty(unitID) and not UnitInRaid(unitID) then return end
+
+    self.deathThrottle.count = self.deathThrottle.count + 1
+
+    local msgText = FormatPartyDeathMessage(self.db, unitID)
+    if not msgText then return end
+
+    self:ShowFlashMessage("partyDeath", msgText, { 1, 1, 1, 1 })
+end
+
+function CM:ApplySettings()
+    if not self.container then return end
+    self:ApplyContainerPosition()
+
+    for msgType, frame in pairs(self.messageFrames) do self:UpdateFrameFont(frame, msgType) end
+
     if self.isPreview then
+        self:UpdatePreview()
+    else
         for _, msgType in ipairs(MESSAGE_TYPES) do
             local frame = self.messageFrames[msgType]
-            if frame then
+            if frame and frame:IsShown() then
                 local _, msgText, msgColor = GetMessageConfig(self.db, msgType)
-                frame.text:SetText(msgText)
-                frame.text:SetTextColor(msgColor[1] or 1, msgColor[2] or 1, msgColor[3] or 1, msgColor[4] or 1)
+                self:SetMessageContent(frame, msgText, msgColor, msgType)
             end
         end
-        self:ArrangeMessages()
-    else
-        -- Re-check no target state
+
+        self.arrangeGeneration = (self.arrangeGeneration or 0) + 1
+        local myGeneration = self.arrangeGeneration
+        C_Timer.After(0, function()
+            if self.arrangeGeneration ~= myGeneration then return end
+            self:ArrangeMessages()
+        end)
+
         self:CheckNoTarget()
     end
 end
 
--- Preview Mode
 function CM:ShowPreview()
-    if not self.container then
-        self:CreateContainer()
-    end
+    if not self.container then self:CreateContainer() end
 
     self.isPreview = true
+    self:UpdatePreview()
+end
 
-    -- Show all message types for preview to demonstrate vertical grouping
+function CM:UpdatePreview()
+    if not self.isPreview then return end
+
     for _, msgType in ipairs(MESSAGE_TYPES) do
         local frame = self:GetMessageFrame(msgType)
         if frame then
-            local _, msgText, msgColor = GetMessageConfig(self.db, msgType)
-            frame.text:SetText(msgText)
-            frame.text:SetTextColor(msgColor[1] or 1, msgColor[2] or 1, msgColor[3] or 1, msgColor[4] or 1)
-            frame:SetAlpha(1)
-            frame:Show()
-            self.activeMessages[msgType] = true
+            local enabled, msgText, msgColor = GetMessageConfig(self.db, msgType)
+
+            if msgType == "partyDeath" and enabled then
+                msgText = FormatPartyDeathMessage(self.db, "player", "Player")
+                msgColor = { 1, 1, 1, 1 }
+            end
+
+            if enabled then
+                self:SetMessageContent(frame, msgText, msgColor, msgType)
+                frame:SetAlpha(1)
+                frame:Show()
+                self.activeMessages[msgType] = true
+            else
+                frame:Hide()
+                self.activeMessages[msgType] = nil
+            end
         end
     end
 
-    self:ArrangeMessages()
+    self.arrangeGeneration = (self.arrangeGeneration or 0) + 1
+    local myGeneration = self.arrangeGeneration
+    C_Timer.After(0, function()
+        if self.arrangeGeneration ~= myGeneration then return end
+        if not self.isPreview then return end
+        self:ArrangeMessages()
+    end)
 end
 
 function CM:HidePreview()
@@ -314,84 +464,82 @@ function CM:HidePreview()
 
     self.isPreview = false
 
-    -- Hide all message frames
     for msgType, frame in pairs(self.messageFrames) do
         frame:Hide()
         self.activeMessages[msgType] = nil
     end
 
-    -- Re-check actual state
-    if self.inCombat then
-        self:CheckNoTarget()
-    end
+    self:ArrangeMessages()
+
+    if self.inCombat then self:CheckNoTarget() end
 end
 
--- Module OnEnable
 function CM:OnEnable()
     if not self.db.Enabled then return end
 
-    -- Create container
+    self.inCombat = false
+    self.isPreview = false
+    self.noTargetCheckGeneration = 0
+    self.deathThrottle = { count = 0, resetTime = 0 }
+
     self:CreateContainer()
 
-    -- Pre-create message frames
-    for _, msgType in ipairs(MESSAGE_TYPES) do
-        self:GetMessageFrame(msgType)
-    end
+    for _, msgType in ipairs(MESSAGE_TYPES) do self:GetMessageFrame(msgType) end
 
-    C_Timer.After(0.5, function()
-        self:ApplySettings()
-    end)
+    C_Timer.After(0.5, function() self:ApplySettings() end)
 
-    -- Register events
-    self:RegisterEvent("PLAYER_REGEN_ENABLED", "OnExitCombat")
-    self:RegisterEvent("PLAYER_REGEN_DISABLED", "OnEnterCombat")
-    self:RegisterEvent("PLAYER_TARGET_CHANGED", "OnTargetChanged")
-    self:RegisterEvent("PLAYER_DEAD", "OnPlayerDead")
-
-    -- Check initial combat state
-    self.inCombat = InCombatLockdown()
-    if self.inCombat then
+    self:RegisterEvent("PLAYER_REGEN_DISABLED", function()
+        self.inCombat = true
+        self:ShowFlashMessage("enterCombat")
         self:CheckNoTarget()
-    end
+    end)
+    self:RegisterEvent("PLAYER_REGEN_ENABLED", function()
+        self.inCombat = false
+        self.noTargetCheckGeneration = (self.noTargetCheckGeneration or 0) + 1
+        self:HidePersistentMessage("noTarget")
+        self:ShowFlashMessage("exitCombat")
+    end)
+    self:RegisterEvent("PLAYER_TARGET_CHANGED", "CheckNoTarget")
+    self:RegisterEvent("PLAYER_DEAD", function()
+        self.noTargetCheckGeneration = (self.noTargetCheckGeneration or 0) + 1
+        self:HidePersistentMessage("noTarget")
+    end)
+    self:RegisterEvent("UNIT_DIED", "OnUnitDied")
 
-    -- Register with EditMode
-    local config = {
+    self.inCombat = InCombatLockdown()
+    if self.inCombat then self:CheckNoTarget() end
+
+    NRSKNUI.EditMode:RegisterElement({
         key = "CombatMessages",
         displayName = "Combat Messages",
         frame = self.container,
         getPosition = function()
-            return self.db.Position
+            local grow = GROW_ANCHORS[self.db.Grow] or GROW_ANCHORS.DOWN
+            return {
+                AnchorFrom = grow.containerAnchor,
+                AnchorTo = self.db.Position.AnchorTo,
+                XOffset = self.db.Position.XOffset,
+                YOffset = self.db.Position.YOffset,
+            }
         end,
         setPosition = function(pos)
-            self.db.Position.AnchorFrom = pos.AnchorFrom
             self.db.Position.AnchorTo = pos.AnchorTo
             self.db.Position.XOffset = pos.XOffset
             self.db.Position.YOffset = pos.YOffset
-            if self.container then
-                local parent = NRSKNUI:ResolveAnchorFrame(self.db.anchorFrameType, self.db.ParentFrame)
-                self.container:ClearAllPoints()
-                self.container:SetPoint(pos.AnchorFrom, parent, pos.AnchorTo, pos.XOffset, pos.YOffset)
-            end
+            self:ApplyContainerPosition()
         end,
         getParentFrame = function()
             return NRSKNUI:ResolveAnchorFrame(self.db.anchorFrameType, self.db.ParentFrame)
         end,
         guiPath = "combatMessage",
-    }
-    NRSKNUI.EditMode:RegisterElement(config)
+    })
 end
 
--- Module OnDisable
 function CM:OnDisable()
-    -- Hide all frames
-    for _, frame in pairs(self.messageFrames) do
-        frame:Hide()
-    end
+    for _, frame in pairs(self.messageFrames) do frame:Hide() end
     self.activeMessages = {}
     self.isPreview = false
     self.inCombat = false
-    self.noTargetCheckGeneration = self.noTargetCheckGeneration + 1
-
-    -- Unregister events
+    self.noTargetCheckGeneration = 0
     self:UnregisterAllEvents()
 end

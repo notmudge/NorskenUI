@@ -130,25 +130,18 @@ function NRSKNUI.GUI.CreateScrollbar(scrollFrame, options)
         end
     end)
 
-    -- Mouse wheel scrolling on scroll frame
-    scrollFrame:EnableMouseWheel(true)
-    scrollFrame:SetScript("OnMouseWheel", function(_, delta)
+    -- Mouse wheel handler
+    local function OnMouseWheel(_, delta)
         local currentVal = scrollbar:GetValue()
         local minVal, maxVal = scrollbar:GetMinMaxValues()
         local newVal = currentVal - (delta * scrollStep)
-        newVal = math_max(minVal, math_min(maxVal, newVal))
-        scrollbar:SetValue(newVal)
-    end)
+        scrollbar:SetValue(math_max(minVal, math_min(maxVal, newVal)))
+    end
 
-    -- Also allow scrolling when hovering over the scrollbar itself
+    scrollFrame:EnableMouseWheel(true)
+    scrollFrame:SetScript("OnMouseWheel", OnMouseWheel)
     scrollbar:EnableMouseWheel(true)
-    scrollbar:SetScript("OnMouseWheel", function(_, delta)
-        local currentVal = scrollbar:GetValue()
-        local minVal, maxVal = scrollbar:GetMinMaxValues()
-        local newVal = currentVal - (delta * scrollStep)
-        newVal = math_max(minVal, math_min(maxVal, newVal))
-        scrollbar:SetValue(newVal)
-    end)
+    scrollbar:SetScript("OnMouseWheel", OnMouseWheel)
 
     Mixin(scrollbar, NUIScrollbarMixin)
 

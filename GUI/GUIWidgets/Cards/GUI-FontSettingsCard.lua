@@ -26,6 +26,9 @@ local ipairs = ipairs
 ---    dbKeys = table,              -- Custom keys for db fields
 ---    onChangeCallback = function, -- Called when any value changes
 ---    fontSizeRange = {min, max},  -- Font size slider range (default: {8, 72})
+---    fontSizes = {                -- Multiple font sizes (optional, overrides dbKeys.fontSize)
+---        { label = string, dbKey = string },
+---    },
 ---    searchable = boolean,        -- Enable font search (default: true)
 ---    includeSoftOutline = boolean,-- Include SOFTOUTLINE option (default: false)
 ---    shadowOffsetRange = {min, max}, -- Shadow offset range (default: {-5, 5})
@@ -44,6 +47,7 @@ function GUIFrame:CreateFontSettingsCard(scrollChild, yOffset, config)
     local dbKeys = config.dbKeys or {}
     local onChange = config.onChangeCallback
     local fontSizeRange = config.fontSizeRange or { 8, 72 }
+    local fontSizes = config.fontSizes
     local searchable = config.searchable ~= false
     local includeSoftOutline = config.includeSoftOutline == true
     local shadowOffsetRange = config.shadowOffsetRange or { -5, 5 }
@@ -66,12 +70,30 @@ function GUIFrame:CreateFontSettingsCard(scrollChild, yOffset, config)
     local shadowDb = db[keys.shadow]
 
     local function getValue(key, default)
+        if key:find("%.") then
+            local parts = { strsplit(".", key) }
+            local current = db
+            for _, part in ipairs(parts) do
+                if current[part] == nil then return default end
+                current = current[part]
+            end
+            return current
+        end
         if db[key] ~= nil then return db[key] end
         return default
     end
 
     local function setValue(key, val)
-        db[key] = val
+        if key:find("%.") then
+            local parts = { strsplit(".", key) }
+            local current = db
+            for i = 1, #parts - 1 do
+                current = current[parts[i]]
+            end
+            current[parts[#parts]] = val
+        else
+            db[key] = val
+        end
         if onChange then onChange() end
     end
 
@@ -144,21 +166,44 @@ function GUIFrame:CreateFontSettingsCard(scrollChild, yOffset, config)
     table_insert(widgets, outlineDropdown)
     card:AddRow(row1, Theme.rowHeight)
 
-    local row2 = GUIFrame:CreateRow(card.content, Theme.rowHeight)
-
-    local fontSizeSlider = GUIFrame:CreateSlider(row2, "Font Size", {
-        min = fontSizeRange[1],
-        max = fontSizeRange[2],
-        step = 1,
-        value = getValue(keys.fontSize, 18),
-        labelWidth = 60,
-        callback = function(val)
-            setValue(keys.fontSize, val)
+    if fontSizes and #fontSizes > 0 then
+        local maxPerRow = 2
+        for i = 1, #fontSizes, maxPerRow do
+            local row = GUIFrame:CreateRow(card.content, Theme.rowHeight)
+            local countInRow = math.min(maxPerRow, #fontSizes - i + 1)
+            local widthPct = 1 / countInRow
+            for j = i, math.min(i + maxPerRow - 1, #fontSizes) do
+                local sizeConfig = fontSizes[j]
+                local sizeSlider = GUIFrame:CreateSlider(row, sizeConfig.label or "Size", {
+                    min = fontSizeRange[1],
+                    max = fontSizeRange[2],
+                    step = 1,
+                    value = getValue(sizeConfig.dbKey, 18),
+                    callback = function(val)
+                        setValue(sizeConfig.dbKey, val)
+                    end
+                })
+                row:AddWidget(sizeSlider, widthPct)
+                table_insert(widgets, sizeSlider)
+            end
+            card:AddRow(row, Theme.rowHeight)
         end
-    })
-    row2:AddWidget(fontSizeSlider, 1)
-    table_insert(widgets, fontSizeSlider)
-    card:AddRow(row2, Theme.rowHeight)
+    else
+        local row2 = GUIFrame:CreateRow(card.content, Theme.rowHeight)
+        local fontSizeSlider = GUIFrame:CreateSlider(row2, "Font Size", {
+            min = fontSizeRange[1],
+            max = fontSizeRange[2],
+            step = 1,
+            value = getValue(keys.fontSize, 18),
+            labelWidth = 60,
+            callback = function(val)
+                setValue(keys.fontSize, val)
+            end
+        })
+        row2:AddWidget(fontSizeSlider, 1)
+        table_insert(widgets, fontSizeSlider)
+        card:AddRow(row2, Theme.rowHeight)
+    end
 
     local rowSep = GUIFrame:CreateRow(card.content, Theme.rowHeightSeparator)
     local sep = GUIFrame:CreateSeparator(rowSep)
@@ -168,13 +213,14 @@ function GUIFrame:CreateFontSettingsCard(scrollChild, yOffset, config)
 
     local row3 = GUIFrame:CreateRow(card.content, Theme.rowHeight)
 
-    shadowEnableCheck = GUIFrame:CreateCheckbox(row3, "Font Shadow",
-        shadowDb[shadowKeys.enabled] == true,
-        function(checked)
+    shadowEnableCheck = GUIFrame:CreateCheckbox(row3, "Font Shadow", {
+        value = shadowDb[shadowKeys.enabled] == true,
+        callback = function(checked)
             shadowDb[shadowKeys.enabled] = checked
             if onChange then onChange() end
             UpdateShadowState()
-        end)
+        end
+    })
     row3:AddWidget(shadowEnableCheck, 0.5)
     table_insert(widgets, shadowEnableCheck)
 

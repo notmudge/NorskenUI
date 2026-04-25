@@ -22,6 +22,7 @@
     <!-- GUI Premade Cards -->
     <Script file="GUIWidgets\Cards\GUI-PositionCard.lua" />
     <Script file="GUIWidgets\Cards\GUI-FontSettingsCard.lua" />
+    <Script file="GUIWidgets\Cards\GUI-GlowSettingsCard.lua" />
 
     <!-- GUI Home Page -->
     <Script file="GUIMain\GUI-HomePage.lua" />

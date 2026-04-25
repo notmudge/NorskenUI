@@ -79,10 +79,10 @@ function NRSKNUI:GetSafeUnitName(unit)
     if not self:IsSafeValue(unit) then return nil end
     if type(unit) ~= "string" then return nil end
 
-    local name = GetUnitName(unit, true)
+    local name = GetUnitName(unit, false)
     if not self:IsSafeValue(name) then return nil end
 
-    return name
+    return name:gsub("%s?%(%*%)", "")
 end
 
 -- Get unit GUID safely, returns nil if unit or guid is secret

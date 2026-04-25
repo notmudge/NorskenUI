@@ -433,7 +433,6 @@ end
 function DC:FetchCastData(unit)
     local name, text, texture, _, _, _, castID, notInterruptible, spellID = UnitCastingInfo(unit)
     if name then
-        -- Fetch target information (UnitSpellTargetName returns the name directly)
         local targetName = UnitSpellTargetName and UnitSpellTargetName(unit) or nil
         local targetClass = targetName and UnitSpellTargetClass and UnitSpellTargetClass(unit) or nil
 
@@ -455,7 +454,6 @@ function DC:FetchCastData(unit)
 
     name, text, texture, _, _, _, notInterruptible, spellID = UnitChannelInfo(unit)
     if name then
-        -- Fetch target information for channels (UnitSpellTargetName returns the name directly)
         local targetName = UnitSpellTargetName and UnitSpellTargetName(unit) or nil
         local targetClass = targetName and UnitSpellTargetClass and UnitSpellTargetClass(unit) or nil
 

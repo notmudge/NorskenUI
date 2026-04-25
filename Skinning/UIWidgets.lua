@@ -131,16 +131,17 @@ function UIW:StyleStatusBarWidget(widget)
             if bar.BorderCenter then bar.BorderCenter:SetAlpha(0) end
             if bar.Spark then bar.Spark:SetAlpha(0) end
 
-            -- Create backdrop if not exists
             if not bar.nrsknBackdrop then
-                bar.nrsknBackdrop = NRSKNUI:CreateStandardBackdrop(
-                    bar,
-                    nil,
-                    bar:GetFrameLevel() - 1,
-                    barDB.BackdropColor,
-                    barDB.BorderColor
-                )
-                bar.nrsknBackdrop:SetAllPoints(bar)
+                local backdrop = CreateFrame("Frame", nil, bar)
+                backdrop:SetFrameLevel(bar:GetFrameLevel() - 1)
+                backdrop:SetAllPoints(bar)
+
+                backdrop.bg = backdrop:CreateTexture(nil, "BACKGROUND")
+                backdrop.bg:SetAllPoints()
+                backdrop.bg:SetColorTexture(unpack(barDB.BackdropColor))
+
+                NRSKNUI:AddBorders(backdrop, barDB.BorderColor)
+                bar.nrsknBackdrop = backdrop
             end
         end
     end

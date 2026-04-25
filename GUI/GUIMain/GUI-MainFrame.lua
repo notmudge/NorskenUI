@@ -320,63 +320,32 @@ function GUIFrame:CreateShortcutFrame(parent)
 
     local scrollFrame = CreateFrame("ScrollFrame", nil, dropdownList)
     scrollFrame:SetPoint("TOPLEFT", dropdownList, "TOPLEFT", 0, 0)
-    scrollFrame:SetPoint("BOTTOMRIGHT", dropdownList, "BOTTOMRIGHT", -11, 0)
+    scrollFrame:SetPoint("BOTTOMRIGHT", dropdownList, "BOTTOMRIGHT", -12, 0)
 
     local scrollChild = CreateFrame("Frame", nil, scrollFrame)
     scrollFrame:SetScrollChild(scrollChild)
 
-    local scrollbar = CreateFrame("Slider", nil, dropdownList, "BackdropTemplate")
+    local scrollbar = NRSKNUI.GUI.CreateScrollbar(scrollFrame, {
+        anchorToScrollFrame = false,
+    })
+    scrollbar:SetParent(dropdownList)
+    scrollbar:ClearAllPoints()
     scrollbar:SetPoint("TOPRIGHT", dropdownList, "TOPRIGHT", 0, 0)
     scrollbar:SetPoint("BOTTOMRIGHT", dropdownList, "BOTTOMRIGHT", 0, 0)
-    scrollbar:SetWidth(12)
-    scrollbar:SetBackdrop({
-        bgFile = "Interface\\Buttons\\WHITE8X8",
-        edgeFile = "Interface\\Buttons\\WHITE8X8",
-        edgeSize = 1,
-    })
-    scrollbar:SetBackdropBorderColor(Theme.border[1], Theme.border[2], Theme.border[3], 1)
-    scrollbar:SetBackdropColor(Theme.bgDark[1], Theme.bgDark[2], Theme.bgDark[3], 1)
-    scrollbar:SetOrientation("VERTICAL")
-    local pxlPerfStep = NRSKNUI:PixelBestSize()
-    scrollbar:SetValueStep(pxlPerfStep)
-    scrollbar:SetMinMaxValues(0, 100)
-    scrollbar:SetValue(0)
-    scrollbar:Hide()
-
-    scrollbar:SetThumbTexture("Interface\\Buttons\\WHITE8X8")
-    scrollbar:SetScript("OnValueChanged", function(_, value)
-        scrollFrame:SetVerticalScroll(value)
-    end)
 
     local scrollHold = false
-    scrollbar:SetScript("OnMouseDown", function(_, button)
+    scrollbar:HookScript("OnMouseDown", function(_, button)
         if button == "LeftButton" then
             scrollHold = true
         end
     end)
-    scrollbar:SetScript("OnMouseUp", function(_, button)
+    scrollbar:HookScript("OnMouseUp", function(_, button)
         if button == "LeftButton" then
             C_Timer.After(0.1, function()
                 scrollHold = false
             end)
         end
     end)
-
-    local thumb = scrollbar:GetThumbTexture()
-    thumb:SetSize(12, 30)
-    thumb:SetColorTexture(Theme.accent[1], Theme.accent[2], Theme.accent[3], 0.8)
-
-    local thumbBorder = CreateFrame("Frame", nil, scrollbar, "BackdropTemplate")
-    thumbBorder:SetPoint("TOPLEFT", thumb, 0, 0)
-    thumbBorder:SetPoint("BOTTOMRIGHT", thumb, 0, 0)
-    thumbBorder:SetBackdrop({
-        edgeFile = "Interface\\Buttons\\WHITE8X8",
-        edgeSize = 1,
-    })
-    thumbBorder:SetBackdropBorderColor(Theme.border[1], Theme.border[2], Theme.border[3], 1)
-
-    thumb:HookScript("OnShow", function() thumbBorder:Show() end)
-    thumb:HookScript("OnHide", function() thumbBorder:Hide() end)
 
     local isOpen = false
     local itemButtons = {}
@@ -457,32 +426,20 @@ function GUIFrame:CreateShortcutFrame(parent)
     local function UpdateScroll()
         local contentHeight = scrollChild:GetHeight()
         local scrollFrameHeight = scrollFrame:GetHeight()
-        local needsScrollbar = contentHeight > scrollFrameHeight and scrollFrameHeight > 0
+        local needsScrollbar = scrollbar:UpdateVisibility(contentHeight, scrollFrameHeight)
 
         if needsScrollbar then
-            scrollbar:Show()
-            scrollbar:SetMinMaxValues(0, contentHeight - scrollFrameHeight)
             scrollbar:SetValue(0)
-            scrollFrame:SetPoint("BOTTOMRIGHT", dropdownList, "BOTTOMRIGHT", -11, 0)
+            scrollFrame:SetPoint("BOTTOMRIGHT", dropdownList, "BOTTOMRIGHT", -12, 0)
         else
-            scrollbar:Hide()
-            scrollbar:SetMinMaxValues(0, 0)
-            scrollFrame:SetVerticalScroll(0)
             scrollFrame:SetPoint("BOTTOMRIGHT", dropdownList, "BOTTOMRIGHT", 0, 0)
         end
 
         scrollChild:SetWidth(scrollFrame:GetWidth())
 
-        for _, btn in ipairs(itemButtons) do
+        for i, btn in ipairs(itemButtons) do
             btn:ClearAllPoints()
-            local index = 0
-            for i, b in ipairs(itemButtons) do
-                if b == btn then
-                    index = i - 1
-                    break
-                end
-            end
-            btn:SetPoint("TOPLEFT", scrollChild, "TOPLEFT", 0, -index * ITEM_HEIGHT)
+            btn:SetPoint("TOPLEFT", scrollChild, "TOPLEFT", 0, -(i - 1) * ITEM_HEIGHT)
             btn:SetPoint("RIGHT", scrollChild, "RIGHT", 0, 0)
         end
     end
@@ -738,8 +695,8 @@ function GUIFrame:CreateShortcutFrame(parent)
     self.shortcutBtn = shortcutBtn
     self.shortcutContent = dropdownList
     self.shortcutItemButtons = itemButtons
-    self.shortcutScrollbarThumb = thumb
-    self.shortcutScrollbarBorder = thumbBorder
+    self.shortcutScrollbarThumb = scrollbar.thumb
+    self.shortcutScrollbarBorder = scrollbar.thumbBorder
 
     return shortcutBtn
 end

@@ -93,8 +93,22 @@ function CS.ApplyProfileToCDM(profileString, profileKey, callbacks)
         layoutManager:SetActiveLayoutByID(layoutIDs[1])
         layoutManager:SaveLayouts()
 
-        NRSKNUI:Print("Successfully applied CDM profile: " .. profileKey)
-        NRSKNUI:Print("A UI reload may be required for changes to take full effect.")
+        -- Auto-dismiss taint warning if present (like WagoUI does)
+        C_Timer.After(0.1, function()
+            if StaticPopup1Button2Text and StaticPopup1Button2Text:GetText() == "Ignore" then
+                StaticPopup1Button2:Click()
+            end
+        end)
+
+        NRSKNUI:CreatePrompt(
+            "CDM Profile Imported",
+            "Successfully applied CDM profile: " .. profileKey .. "\n\nA UI reload is recommended to avoid taint issues.",
+            false, nil, false, nil, nil, nil, nil,
+            function() ReloadUI() end,
+            nil,
+            "Reload Now",
+            "Later"
+        )
         return true
     end
 
@@ -210,7 +224,6 @@ function CS:CreateFrame()
     frame:Hide()
 
     self.attachedFrame = frame
-    self:BuildUI()
 end
 
 function CS:BuildUI()
@@ -294,10 +307,13 @@ function CS:BuildUI()
     importBtn:SetPoint("TOPLEFT", content, "TOPLEFT", 0, 0)
     importBtn:SetPoint("TOPRIGHT", content, "TOPRIGHT", 0, 0)
 
-    local dropdown = NRSKNUI.GUIFrame:CreateDropdown(content, "Select Profile", profileOptions, self.selectedProfile, 0,
-        function(value)
+    local dropdown = NRSKNUI.GUIFrame:CreateDropdown(content, "Select Profile", {
+        options = profileOptions,
+        value = self.selectedProfile,
+        callback = function(value)
             self.selectedProfile = value
-        end)
+        end
+    })
     dropdown:SetPoint("TOPLEFT", importBtn, "BOTTOMLEFT", 0, -Theme.paddingSmall)
     dropdown:SetPoint("TOPRIGHT", importBtn, "BOTTOMRIGHT", 0, -Theme.paddingSmall)
     self.dropdown = dropdown
@@ -320,13 +336,8 @@ function CS:HookCDMFrame()
         return
     end
 
-    cdmFrame:HookScript("OnShow", function()
-        if CS.db.Enabled then CS:ShowFrame() end
-    end)
-
-    cdmFrame:HookScript("OnHide", function()
-        if CS.attachedFrame then CS.attachedFrame:Hide() end
-    end)
+    cdmFrame:HookScript("OnShow", function() if CS.db.Enabled then CS:ShowFrame() end end)
+    cdmFrame:HookScript("OnHide", function() if CS.attachedFrame then CS.attachedFrame:Hide() end end)
 end
 
 function CS:ShowFrame()

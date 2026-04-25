@@ -117,6 +117,9 @@ function DUR:Create()
     -- Apply position and font settings
     NRSKNUI:ApplyFramePosition(self.Frame, self.db.Text.Position, self.db.Text)
     NRSKNUI:ApplyFontToText(self.Text, self.db.FontFace, self.db.Text.FontSize, self.db.FontOutline)
+
+    -- Set text after font so soft outline hook updates shadows
+    Text:SetText("100%")
 end
 
 -- Update text, called from GUI
@@ -160,10 +163,8 @@ function DUR:CreateWarning()
     -- Apply position settings
     NRSKNUI:ApplyFramePosition(self.WarningFrame, self.db.WarningText.Position, { anchorFrameType = "UIPARENT" })
 
-    -- Apply font settings
+    -- Apply font first, then set text so soft outline hook updates shadows
     NRSKNUI:ApplyFontToText(WarningText, self.db.FontFace, self.db.WarningText.FontSize, self.db.FontOutline)
-
-    -- Set text and color
     WarningText:SetTextColor(unpack(color))
     WarningText:SetText(self.db.WarningText.WarningText)
 

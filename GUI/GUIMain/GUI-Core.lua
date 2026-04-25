@@ -1,6 +1,7 @@
 ---@class NRSKNUI
 local NRSKNUI = select(2, ...)
 NRSKNUI.GUIFrame = NRSKNUI.GUIFrame or {}
+NRSKNUI.GUI = NRSKNUI.GUI or {}
 ---@class GUIFrame
 local GUIFrame = NRSKNUI.GUIFrame
 local Theme = NRSKNUI.Theme

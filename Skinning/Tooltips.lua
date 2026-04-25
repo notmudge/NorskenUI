@@ -1,45 +1,34 @@
--- NorskenUI namespace
 ---@class NRSKNUI
 local NRSKNUI = select(2, ...)
 
--- Check for addon object
 if not NorskenUI then
     error("Tooltips: Addon object not initialized. Check file load order!")
     return
 end
 
--- Create module
 ---@class Tooltips: AceModule, AceEvent-3.0
 local TT = NorskenUI:NewModule("Tooltips", "AceEvent-3.0")
 
--- Localization
 local hooksecurefunc = hooksecurefunc
 local CreateFrame = CreateFrame
 local pairs = pairs
-local unpack = unpack
-local GetActionInfo = GetActionInfo
-local GetMacroItem = GetMacroItem
+local Mixin = Mixin
 local _G = _G
 local GetCoinTextureString = GetCoinTextureString
 local issecretvalue = issecretvalue
 local UnitIsPlayer = UnitIsPlayer
 local UnitClass = UnitClass
 local UnitTreatAsPlayerForDisplay = UnitTreatAsPlayerForDisplay
-local GetPlayerInfoByGUID = GetPlayerInfoByGUID
 local UnitNameFromGUID = UnitNameFromGUID
+local UnitTokenFromGUID = UnitTokenFromGUID
 local C_ClassColor = C_ClassColor
-local IsShiftKeyDown = IsShiftKeyDown
-local UnitName = UnitName
-local InCombatLockdown = InCombatLockdown
 local UnitIsMinion = UnitIsMinion
 local UnitSelectionColor = UnitSelectionColor
 local CreateColor = CreateColor
 
--- Module state
 local isInitialized = false
 local tooltipBackdrops = {}
 
--- Tooltips to skin
 local TOOLTIPS_TO_SKIN = {
     "GameTooltip",
     "ItemRefTooltip",
@@ -57,8 +46,7 @@ local TOOLTIPS_TO_SKIN = {
     "SettingsTooltip",
 }
 
--- Custom backdrop mixin
--- This prevents errors when frame width/height become secret values
+-- Prevents errors when frame width/height become secret values
 local backdropMixin = {}
 function backdropMixin:SetBackgroundColor(r, g, b, a)
     if self.backdropBackground then
@@ -83,169 +71,107 @@ function TT:OnInitialize()
     self:SetEnabledState(false)
 end
 
--- Cached color for status bar
 local cachedColor
 
--- Create custom backdrop for tooltip using textures
 local function GetOrCreateBackdrop(tooltip)
-    if not tooltip or tooltip:IsForbidden() then return end
+    if not tooltip or tooltip:IsForbidden() or tooltipBackdrops[tooltip] then return end
 
-    if tooltipBackdrops[tooltip] then
-        return tooltipBackdrops[tooltip]
-    end
-
-    -- Mixin custom backdrop methods
     Mixin(tooltip, backdropMixin)
     tooltip.backdropEdges = {}
 
-    -- Create border textures using point-based positioning
-    local borderLeft = tooltip:CreateTexture(nil, "BORDER")
-    borderLeft:SetPoint("TOPLEFT", tooltip, "TOPLEFT", -1, 1)
-    borderLeft:SetPoint("BOTTOMLEFT", tooltip, "BOTTOMLEFT", -1, -1)
-    borderLeft:SetWidth(1)
-    tooltip.backdropEdges.left = borderLeft
-    NRSKNUI:PixelPerfect(borderLeft)
+    local function CreateBorder(p1, r1, x1, y1, p2, r2, x2, y2, size, isWidth)
+        local tex = tooltip:CreateTexture(nil, "BORDER")
+        tex:SetPoint(p1, tooltip, r1, x1, y1)
+        tex:SetPoint(p2, tooltip, r2, x2, y2)
+        if isWidth then tex:SetWidth(size) else tex:SetHeight(size) end
+        NRSKNUI:PixelPerfect(tex)
+        return tex
+    end
 
-    local borderTop = tooltip:CreateTexture(nil, "BORDER")
-    borderTop:SetPoint("TOPLEFT", tooltip, "TOPLEFT", -1, 1)
-    borderTop:SetPoint("TOPRIGHT", tooltip, "TOPRIGHT", 1, 1)
-    borderTop:SetHeight(1)
-    tooltip.backdropEdges.top = borderTop
-    NRSKNUI:PixelPerfect(borderTop)
+    tooltip.backdropEdges.left = CreateBorder("TOPLEFT", "TOPLEFT", -1, 1, "BOTTOMLEFT", "BOTTOMLEFT", -1, -1, 1, true)
+    tooltip.backdropEdges.top = CreateBorder("TOPLEFT", "TOPLEFT", -1, 1, "TOPRIGHT", "TOPRIGHT", 1, 1, 1, false)
+    tooltip.backdropEdges.right = CreateBorder("TOPRIGHT", "TOPRIGHT", 1, 1, "BOTTOMRIGHT", "BOTTOMRIGHT", 1, -1, 1, true)
+    tooltip.backdropEdges.bottom = CreateBorder("BOTTOMLEFT", "BOTTOMLEFT", -1, -1, "BOTTOMRIGHT", "BOTTOMRIGHT", 1, -1,
+        1, false)
 
-    local borderRight = tooltip:CreateTexture(nil, "BORDER")
-    borderRight:SetPoint("TOPRIGHT", tooltip, "TOPRIGHT", 1, 1)
-    borderRight:SetPoint("BOTTOMRIGHT", tooltip, "BOTTOMRIGHT", 1, -1)
-    borderRight:SetWidth(1)
-    tooltip.backdropEdges.right = borderRight
-    NRSKNUI:PixelPerfect(borderRight)
+    tooltip.backdropBackground = tooltip:CreateTexture(nil, "BACKGROUND")
+    tooltip.backdropBackground:SetAllPoints()
+    NRSKNUI:PixelPerfect(tooltip.backdropBackground)
 
-    local borderBottom = tooltip:CreateTexture(nil, "BORDER")
-    borderBottom:SetPoint("BOTTOMLEFT", tooltip, "BOTTOMLEFT", -1, -1)
-    borderBottom:SetPoint("BOTTOMRIGHT", tooltip, "BOTTOMRIGHT", 1, -1)
-    borderBottom:SetHeight(1)
-    tooltip.backdropEdges.bottom = borderBottom
-    NRSKNUI:PixelPerfect(borderBottom)
-
-    -- Create background texture
-    local background = tooltip:CreateTexture(nil, "BACKGROUND")
-    background:SetAllPoints(tooltip)
-    tooltip.backdropBackground = background
-    NRSKNUI:PixelPerfect(background)
-
-    -- Set default colors
     tooltip:SetBackgroundColor(0, 0, 0, 0.8)
     tooltip:SetBorderColor(0, 0, 0, 1)
 
-    tooltipBackdrops[tooltip] = tooltip
-    return tooltip
+    tooltipBackdrops[tooltip] = true
 end
 
--- Hide default NineSlice border
-local function HideNineSlice(tooltip)
+local skinnedTooltips = {}
+
+local function SkinTooltip(tooltip)
     if not tooltip or tooltip:IsForbidden() then return end
 
     if tooltip.NineSlice then
         tooltip.NineSlice:SetAlpha(0)
         tooltip.NineSlice:Hide()
     end
-
     if tooltip.SetBackdrop then
         tooltip:SetBackdrop(nil)
-    end
-    if tooltip.SetBackdropColor then
         tooltip:SetBackdropColor(0, 0, 0, 0)
-    end
-    if tooltip.SetBackdropBorderColor then
         tooltip:SetBackdropBorderColor(0, 0, 0, 0)
     end
-end
 
--- Hide status bar
-local hookedStatusBars = {}
-local function HideStatusBar(statusBar)
-    if not statusBar or hookedStatusBars[statusBar] then return end
-
-    statusBar:Hide()
-    statusBar:SetAlpha(0)
-    hooksecurefunc(statusBar, "Show", function(self)
-        self:Hide()
-    end)
-    hookedStatusBars[statusBar] = true
-end
-
--- Style a tooltip
-local function StyleTooltip(tooltip)
-    if not tooltip or tooltip:IsForbidden() then return end
-
-    HideNineSlice(tooltip)
     GetOrCreateBackdrop(tooltip)
 
-    -- Hide status bar
-    if tooltip.StatusBar then
-        HideStatusBar(tooltip.StatusBar)
-    end
-end
-
--- Hook tooltip OnShow
-local hookedTooltips = {}
-local function HookTooltip(tooltip)
-    if not tooltip or tooltip:IsForbidden() or hookedTooltips[tooltip] then return end
+    if skinnedTooltips[tooltip] then return end
+    skinnedTooltips[tooltip] = true
 
     tooltip:HookScript("OnShow", function(self)
         if self:IsForbidden() then return end
-        HideNineSlice(self)
+        if self.NineSlice then
+            self.NineSlice:SetAlpha(0)
+            self.NineSlice:Hide()
+        end
+        if self.SetBackdrop then
+            self:SetBackdrop(nil)
+            self:SetBackdropColor(0, 0, 0, 0)
+            self:SetBackdropBorderColor(0, 0, 0, 0)
+        end
         GetOrCreateBackdrop(self)
     end)
 
-    hookedTooltips[tooltip] = true
+    if tooltip.StatusBar then
+        tooltip.StatusBar:Hide()
+        tooltip.StatusBar:SetAlpha(0)
+        hooksecurefunc(tooltip.StatusBar, "Show", function(self) self:Hide() end)
+    end
 end
 
--- Register line processors for unit tooltips
 local function RegisterTooltipProcessors()
     local NAME_REALM_FORMAT = "%s |cff777777(%s)|r"
 
-    -- Unit name line, class color and realm handling
     TooltipDataProcessor.AddLinePreCall(Enum.TooltipDataLineType.UnitName, function(tooltip, data)
-        if tooltip:IsForbidden() or not tooltip:IsTooltipType(Enum.TooltipDataType.Unit) then
-            return
-        end
+        if tooltip:IsForbidden() or not tooltip:IsTooltipType(Enum.TooltipDataType.Unit) then return end
 
-        -- Check tooltip data for guid before calling GetUnit to avoid taint with secret values
         local tooltipData = tooltip:GetTooltipData()
-        if not tooltipData or not tooltipData.guid or issecretvalue(tooltipData.guid) then
-            return
-        end
+        if not tooltipData or not tooltipData.guid then return end
 
-        local _, unit, guid = tooltip:GetUnit()
-        if not guid or issecretvalue(unit) then
-            return
-        end
+        local guid = tooltipData.guid
+        if issecretvalue(guid) then return end
+
+        local unit = UnitTokenFromGUID(guid)
+        if not unit or issecretvalue(unit) then return end
 
         local name, realm
 
-        if issecretvalue(unit) then
-            local _, classToken = GetPlayerInfoByGUID(guid)
+        if UnitIsPlayer(unit) or UnitTreatAsPlayerForDisplay(unit) then
+            local _, classToken = UnitClass(unit)
+            cachedColor = C_ClassColor.GetClassColor(classToken)
             name, realm = UnitNameFromGUID(guid)
-
-            if classToken ~= nil then
-                cachedColor = C_ClassColor.GetClassColor(classToken)
-            else
-                cachedColor = data.leftColor
-            end
-        elseif unit ~= nil then
-            if UnitIsPlayer(unit) or UnitTreatAsPlayerForDisplay(unit) then
-                local _, classToken = UnitClass(unit)
-                cachedColor = C_ClassColor.GetClassColor(classToken)
-                name, realm = UnitNameFromGUID(guid)
-            elseif UnitIsMinion(unit) then
-                cachedColor = CreateColor(UnitSelectionColor(unit, true))
-            else
-                cachedColor = data.leftColor
-            end
+        elseif UnitIsMinion(unit) then
+            cachedColor = CreateColor(UnitSelectionColor(unit, true))
+        else
+            cachedColor = data.leftColor
         end
 
-        -- Add the name line with proper color
         if realm ~= nil then
             tooltip:AddLine(NAME_REALM_FORMAT:format(name, realm), cachedColor:GetRGB())
         elseif name ~= nil then
@@ -254,7 +180,7 @@ local function RegisterTooltipProcessors()
             tooltip:AddLine(data.leftText, (cachedColor or data.leftColor):GetRGB())
         end
 
-        return true -- Replace the original line
+        return true
     end)
 
     TooltipDataProcessor.AddLinePreCall(Enum.TooltipDataLineType.UnitOwner, function(tooltip, data)
@@ -267,13 +193,10 @@ local function RegisterTooltipProcessors()
     end)
 
     TooltipDataProcessor.AddLinePreCall(Enum.TooltipDataLineType.UnitThreat, function(tooltip)
-        if not tooltip:IsForbidden() then
-            return true
-        end
+        return not tooltip:IsForbidden()
     end)
 end
 
--- Set custom fonts
 local function SetTooltipFonts()
     local font = NRSKNUI.FONT or "Fonts\\FRIZQT__.TTF"
 
@@ -295,156 +218,6 @@ local function SetTooltipFonts()
     end
 end
 
--- Tooltip IDs (shown when holding shift)
-local PREFIXES = {
-    item = ENCOUNTER_JOURNAL_ITEM,
-    spell = STAT_CATEGORY_SPELL,
-    currency = CURRENCY,
-    mount = MOUNT,
-    macro = MACRO,
-    npc = PROF_CRAFTING_ORDER_TYPE_NPC:upper(),
-    age = "Age",
-    quest = TRANSMOG_SOURCE_2,
-    caster = SPELL_TARGET_CENTER_CASTER:gsub("^%l", string.upper),
-}
-
-local SUFFIXES = {
-    item = ID,
-    spell = ID,
-    currency = ID,
-    mount = ID,
-    macro = NAME,
-    npc = ID,
-    quest = ID,
-}
-
-local LINE_FORMAT = "%s: |cff93ccea%s|r"
-local function addTooltipLine(tooltip, kind, value, forced)
-    if tooltip:IsForbidden() or not (forced or IsShiftKeyDown()) then
-        return
-    end
-
-    local prefix = PREFIXES[kind] or ID
-    local suffix = SUFFIXES[kind]
-    if suffix then
-        tooltip:AddLine(LINE_FORMAT:format(prefix .. " " .. suffix, value or UNKNOWN))
-    else
-        tooltip:AddLine(LINE_FORMAT:format(prefix, value or UNKNOWN))
-    end
-
-    return true
-end
-
-local dataTypeHandlers = {}
-
-function dataTypeHandlers:Item(data)
-    addTooltipLine(self, "item", data.id)
-end
-
-function dataTypeHandlers:Spell(data)
-    addTooltipLine(self, "spell", data.id)
-end
-
-function dataTypeHandlers:Currency(data)
-    addTooltipLine(self, "currency", data.id)
-end
-
-function dataTypeHandlers:Mount(data)
-    if data.id then
-        local _, spellID = C_MountJournal.GetMountInfoByID(data.id)
-        if spellID then
-            addTooltipLine(self, "mount", data.id)
-            addTooltipLine(self, "spell", spellID)
-        end
-    end
-end
-
-function dataTypeHandlers:PetAction(data)
-    for _, line in pairs(data.lines) do
-        if line.tooltipID then
-            addTooltipLine(self, "spell", line.tooltipID)
-            break
-        end
-    end
-end
-
-function dataTypeHandlers:Macro()
-    if self.processingInfo and self.processingInfo.getterName == "GetAction" then
-        local actionID = unpack(self.processingInfo.getterArgs)
-        local actionText = C_ActionBar.GetActionText(actionID)
-        addTooltipLine(self, "macro", actionText)
-
-        local _, macroActionID, macroActionType = GetActionInfo(actionID)
-        if macroActionType == "spell" then
-            addTooltipLine(self, macroActionType, macroActionID)
-        elseif macroActionType == "" then
-            if C_Macro.GetMacroName(macroActionID) == actionText then
-                local _, itemLink = GetMacroItem(macroActionID)
-                if itemLink then
-                    addTooltipLine(self, "item", C_Item.GetItemIDForItemInfo(itemLink))
-                end
-            end
-        end
-    end
-end
-
-dataTypeHandlers.Corpse = dataTypeHandlers.Unit
-dataTypeHandlers.Toy = dataTypeHandlers.Item
-
-do
-    local getters = {
-        GetUnitAura = C_UnitAuras.GetAuraDataByIndex,
-        GetUnitAuraByAuraInstanceID = C_UnitAuras.GetAuraDataByAuraInstanceID,
-        GetUnitBuff = C_UnitAuras.GetBuffDataByIndex,
-        GetUnitBuffByAuraInstanceID = C_UnitAuras.GetAuraDataByAuraInstanceID,
-        GetUnitDebuff = C_UnitAuras.GetDebuffDataByIndex,
-        GetUnitDebuffByAuraInstanceID = C_UnitAuras.GetAuraDataByAuraInstanceID,
-    }
-
-    function dataTypeHandlers:UnitAura(data)
-        if data.id then
-            local getter = getters[self.processingInfo.getterName]
-            if getter then
-                local auraInfo = getter(unpack(self.processingInfo.getterArgs))
-                if auraInfo and auraInfo.sourceUnit and not issecretvalue(auraInfo.sourceUnit) then
-                    local name = UnitName(auraInfo.sourceUnit)
-                    local _, classToken = UnitClass(auraInfo.sourceUnit)
-                    if classToken then
-                        name = C_ClassColor.GetClassColor(classToken):WrapTextInColorCode(name)
-                    end
-
-                    self:AddLine(" ")
-                    addTooltipLine(self, "caster", name, true)
-                end
-            end
-
-            addTooltipLine(self, "spell", data.id)
-        end
-    end
-end
-
-local function RegisterIDProcessors()
-    for dataType, key in pairs(Enum.TooltipDataType) do
-        if dataTypeHandlers[dataType] then
-            TooltipDataProcessor.AddTooltipPostCall(key, dataTypeHandlers[dataType])
-        end
-    end
-end
-
--- Shift key handler to refresh tooltip
-local function OnModifierStateChanged(_, key)
-    if InCombatLockdown() then return end
-    if key ~= "LSHIFT" and key ~= "RSHIFT" then return end
-
-    if GameTooltip:IsShown() and not GameTooltip:IsForbidden() then
-        local _, unit = GameTooltip:GetUnit()
-        if not unit or not issecretvalue(unit) then
-            GameTooltip:RefreshData()
-        end
-    end
-end
-
--- Create anchor frame
 function TT:CreateTooltipAnchorFrame()
     local TTAnchor = CreateFrame("Frame", "NRSKNUI_ToolTipAnchorFrame", UIParent)
     TTAnchor:SetSize(170, 60)
@@ -462,7 +235,6 @@ function TT:CreateTooltipAnchorFrame()
     return TTAnchor
 end
 
--- Anchor tooltip to our frame
 function TT:AnchorTooltip(tooltip)
     if not tooltip or tooltip:IsForbidden() then return end
     tooltip:ClearAllPoints()
@@ -470,7 +242,6 @@ function TT:AnchorTooltip(tooltip)
     tooltip:SetPoint("BOTTOMRIGHT", self.TTAnchor, "BOTTOMRIGHT", 0, 0)
 end
 
--- Disable edit mode for tooltips
 local function DisableTooltipEditMode()
     if GameTooltipDefaultContainer then
         GameTooltipDefaultContainer.SetIsInEditMode = nop
@@ -483,7 +254,6 @@ local function DisableTooltipEditMode()
     end
 end
 
--- Skin QueueStatusFrame
 local function SkinQueueStatus()
     local frame = QueueStatusFrame
     if not frame then return end
@@ -520,10 +290,7 @@ end
 function TT:Refresh()
     for _, tooltipName in pairs(TOOLTIPS_TO_SKIN) do
         local tooltip = _G[tooltipName]
-        if tooltip then
-            HookTooltip(tooltip)
-            StyleTooltip(tooltip)
-        end
+        if tooltip then SkinTooltip(tooltip) end
     end
 end
 
@@ -546,19 +313,12 @@ function TT:OnEnable()
     TT:Refresh()
     SkinQueueStatus()
     RegisterTooltipProcessors()
-    RegisterIDProcessors()
     SetTooltipFonts()
 
-    -- Register shift key handler
-    self:RegisterEvent("MODIFIER_STATE_CHANGED", OnModifierStateChanged)
-
-    hooksecurefunc("GameTooltip_SetDefaultAnchor", function(tooltip)
-        TT:AnchorTooltip(tooltip)
-    end)
+    hooksecurefunc("GameTooltip_SetDefaultAnchor", function(tooltip) TT:AnchorTooltip(tooltip) end)
 
     C_Timer.After(0.5, DisableTooltipEditMode)
 
-    -- Register with edit mode
     local config = {
         key = "TooltipModule",
         displayName = "Tooltip Anchor",
