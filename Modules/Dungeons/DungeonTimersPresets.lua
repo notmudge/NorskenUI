@@ -1,9 +1,8 @@
--- NorskenUI namespace
 ---@class NRSKNUI
 local NRSKNUI = select(2, ...)
 
--- Generated Dungeon Timer Presets
--- Paste this into DungeonTimerPresets.lua
+-- Auto Generated Dungeon Timer Presets
+-- Pasted into DungeonTimerPresets.lua
 
 NRSKNUI.DungeonTimerPresets = {
     _version = 1,

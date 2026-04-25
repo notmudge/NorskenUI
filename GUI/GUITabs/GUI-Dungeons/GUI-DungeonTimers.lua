@@ -2234,10 +2234,10 @@ local function CreateSettingsTextPreview(index, data)
     -- Text - create fresh FontString
     local textWidth = 200 - iconSize - 4
     frame.displayText = frame:CreateFontString(nil, "OVERLAY")
-    frame.displayText:SetWidth(textWidth)
     frame.displayText:SetJustifyH(textAlign)
     frame.displayText:SetPoint("LEFT", frame, "LEFT", iconSize + 4, 0)
     NRSKNUI:ApplyFontToText(frame.displayText, fontFace, fontSize, fontOutline)
+    frame.displayText:SetWidth(textWidth)
     local textColor = data.color or { 1, 1, 1 }
     frame.displayText:SetTextColor(textColor[1], textColor[2], textColor[3], 1)
     frame.displayText:SetText(string.format("%s » %.1f", data.name, data.time))

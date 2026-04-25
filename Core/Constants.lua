@@ -43,7 +43,6 @@ NRSKNUI.RANGED_RANGE_ABILITIES = {
 }
 
 NRSKNUI.MOVEMENT_SPELLS = {
-    -- specID = { spellID, iconID }
     -- Death Knight
     [250]  = { spellID = 48265, iconID = 237511 },    -- Blood: Death's Advance
     [251]  = { spellID = 48265, iconID = 237511 },    -- Frost: Death's Advance
@@ -113,4 +112,28 @@ NRSKNUI.CLASS_INTERRUPTS = {
     [11] = { 78675, 106839 },               -- Druid
     [12] = { 183752 },                      -- Demon Hunter
     [13] = { 351338 },                      -- Evoker
+}
+
+NRSKNUI.BIGWIGS_EVENTS = {
+    "BigWigs_Timer",
+    "BigWigs_TargetTimer",
+    "BigWigs_CastTimer",
+    "BigWigs_StartBreak",
+    "BigWigs_StartPull",
+    "BigWigs_StopBar",
+    "BigWigs_StopBars",
+    "BigWigs_PauseBar",
+    "BigWigs_ResumeBar",
+    "BigWigs_OnBossDisable",
+}
+
+NRSKNUI.DUNGEON_INFO = {
+    MagistersTerrace  = { instanceId = 2811, name = "Magisters' Terrace" },
+    MaisaraCaverns    = { instanceId = 2874, name = "Maisara Caverns" },
+    NexusPointXenas   = { instanceId = 2915, name = "Nexus-Point Xenas" },
+    WindrunnerSpire   = { instanceId = 2805, name = "Windrunner Spire" },
+    AlgetharAcademy   = { instanceId = 2526, name = "Algeth'ar Academy" },
+    PitOfSaron        = { instanceId = 658, name = "Pit of Saron" },
+    SeatOfTriumvirate = { instanceId = 1753, name = "Seat of the Triumvirate" },
+    Skyreach          = { instanceId = 1209, name = "Skyreach" },
 }

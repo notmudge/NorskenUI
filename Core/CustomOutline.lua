@@ -37,7 +37,6 @@ end
 local function HandleFadeHook(frame, outline, startAlpha)
     if not outline.shadows or not outline.isShown then return end
     local _, _, _, textAlpha = frame:GetTextColor()
-    -- Secret values can't be compared, proceed if secret (assume visible)
     if not (issecretvalue and issecretvalue(textAlpha)) and textAlpha == 0 then return end
 
     fadeHookRunning = true
@@ -97,10 +96,12 @@ function SoftOutline:_ForEach(fn)
 end
 
 function SoftOutline:_ApplyOffsets()
+    local point = self.main:GetPoint(1)
+    local anchor = point or "CENTER"
     self:_ForEach(function(shadow, i)
         local offset = SHADOW_OFFSETS[i]
         shadow:ClearAllPoints()
-        shadow:SetPoint("CENTER", self.main, "CENTER", offset[1] * self.thickness, offset[2] * self.thickness)
+        shadow:SetPoint(anchor, self.main, anchor, offset[1] * self.thickness, offset[2] * self.thickness)
     end)
 end
 
@@ -179,7 +180,6 @@ function SoftOutline:_IsTextVisible()
     if not self.main then return false end
     local _, _, _, textAlpha = self.main:GetTextColor()
     local frameAlpha = self.main:GetAlpha()
-    -- Secret values can't be compared, assume visible if secret
     if issecretvalue and (issecretvalue(textAlpha) or issecretvalue(frameAlpha)) then
         return true
     end
@@ -315,7 +315,6 @@ function SoftOutline:_HookMain()
     local function handleAlphaChange(a)
         local outline = getOutline()
         if not outline then return end
-        -- Secret values can't be compared, assume visible if secret
         if issecretvalue and issecretvalue(a) then
             if outline.isShown then
                 outline:_ForEach(function(shadow) shadow:Show() end)
