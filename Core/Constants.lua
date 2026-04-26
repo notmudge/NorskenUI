@@ -85,9 +85,9 @@ NRSKNUI.MOVEMENT_SPELLS = {
     [260]  = { spellID = 2983, iconID = 132307 },     -- Outlaw: Sprint
     [261]  = { spellID = 2983, iconID = 132307 },     -- Subtlety: Sprint
     -- Shaman
-    [262]  = { spellID = 192063, iconID = 463565 },  -- Elemental: Gust of Wind
+    [262]  = { spellID = 192063, iconID = 463565 },   -- Elemental: Gust of Wind
     [263]  = { spellID = 58875, iconID = 132328 },    -- Enhancement: Spirit Walk
-    [264]  = { spellID = 192063, iconID = 463565 },  -- Restoration: Gust of Wind
+    [264]  = { spellID = 192063, iconID = 463565 },   -- Restoration: Gust of Wind
     -- Warlock
     [265]  = { spellID = 48020, iconID = 607512 },    -- Affliction: Demonic Circle: Teleport
     [266]  = { spellID = 48020, iconID = 607512 },    -- Demonology: Demonic Circle: Teleport

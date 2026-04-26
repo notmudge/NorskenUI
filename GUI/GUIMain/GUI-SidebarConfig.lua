@@ -107,10 +107,20 @@ GUIFrame.SidebarConfig = {
             text = "Dungeon & Party Util",
             defaultExpanded = false,
             items = {
-                { id = "InstanceReset",             text = "Instance Reset" },
-                { id = "HealerMana",                text = "Healer Mana" },
-                { id = "DungeonCasts",              text = "Dungeon Casts" },
-                { id = "Dungeon_Settings",          text = "Timers Settings" },
+                { id = "InstanceReset", text = "Instance Reset" },
+                { id = "HealerMana",    text = "Healer Mana" },
+                { id = "DungeonCasts",  text = "Dungeon Casts" },
+            }
+        },
+        {
+            id = "bigwigs_section",
+            type = "header",
+            text = "BigWigs Timers",
+            defaultExpanded = false,
+            items = {
+                { id = "DT_General",                text = "General" },
+                { id = "DT_Bars",                   text = "Bar Settings" },
+                { id = "DT_Texts",                  text = "Text Settings" },
                 { id = "Dungeon_MagistersTerrace",  text = "Magisters' Terrace" },
                 { id = "Dungeon_MaisaraCaverns",    text = "Maisara Caverns" },
                 { id = "Dungeon_NexusPointXenas",   text = "Nexus-Point Xenas" },

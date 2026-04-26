@@ -7,16 +7,12 @@ if not NorskenUI then return end
 local DT = NorskenUI:GetModule("DungeonTimers")
 if not DT then return end
 
-local AceSerializer = LibStub("AceSerializer-3.0")
-local LibDeflate = LibStub("LibDeflate")
+local AS = LibStub("AceSerializer-3.0")
+local LD = LibStub("LibDeflate")
 
-local pairs = pairs
-local ipairs = ipairs
-local tostring = tostring
-local type = type
-local time = time
-local next = next
-local wipe = wipe
+local pairs, ipairs = pairs, ipairs
+local tostring, tonumber = tostring, tonumber
+local type, wipe, next, time = type, wipe, next, time
 local CopyTable = CopyTable
 local table_insert = table.insert
 
@@ -70,7 +66,19 @@ end
 
 local function ImportTriggersIntoDungeon(dungeonDb, triggers, defaults)
     local importCount, skipCount = 0, 0
-    for _, trigger in pairs(triggers) do
+
+    local sortedIds = {}
+    for id in pairs(triggers) do
+        table_insert(sortedIds, id)
+    end
+    table.sort(sortedIds, function(a, b)
+        local numA, numB = tonumber(a), tonumber(b)
+        if numA and numB then return numA < numB end
+        return tostring(a) < tostring(b)
+    end)
+
+    for _, id in ipairs(sortedIds) do
+        local trigger = triggers[id]
         if type(trigger) == "table" and trigger.name and trigger.triggerType then
             if TriggerExists(dungeonDb.Triggers, trigger) then
                 skipCount = skipCount + 1
@@ -93,11 +101,11 @@ local function FormatResult(importCount, skipCount, dungeonCount)
 end
 
 local function EncodeData(data, prefix)
-    local serialized = AceSerializer:Serialize(data)
+    local serialized = AS:Serialize(data)
     if not serialized then return nil, "Serialization failed" end
-    local compressed = LibDeflate:CompressDeflate(serialized, { level = 9 })
+    local compressed = LD:CompressDeflate(serialized, { level = 9 })
     if not compressed then return nil, "Compression failed" end
-    local encoded = LibDeflate:EncodeForPrint(compressed)
+    local encoded = LD:EncodeForPrint(compressed)
     if not encoded then return nil, "Encoding failed" end
     return prefix .. encoded
 end
@@ -105,11 +113,11 @@ end
 local function DecodeData(importString, prefix)
     if not importString or importString == "" then return nil, "Import string is empty" end
     if importString:sub(1, #prefix) ~= prefix then return nil, "Invalid format" end
-    local compressed = LibDeflate:DecodeForPrint(importString:sub(#prefix + 1))
+    local compressed = LD:DecodeForPrint(importString:sub(#prefix + 1))
     if not compressed then return nil, "Decoding failed" end
-    local serialized = LibDeflate:DecompressDeflate(compressed)
+    local serialized = LD:DecompressDeflate(compressed)
     if not serialized then return nil, "Decompression failed" end
-    local success, data = AceSerializer:Deserialize(serialized)
+    local success, data = AS:Deserialize(serialized)
     if not success or type(data) ~= "table" then return nil, "Deserialization failed" end
     return data
 end

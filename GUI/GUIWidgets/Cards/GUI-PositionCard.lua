@@ -47,11 +47,7 @@ local function CreateAnchorButtons(parent, labelText, value, callback)
     label:SetPoint("TOP", container, "TOP", 0, 2)
     label:SetHeight(titleHeight)
     label:SetJustifyH("CENTER")
-    if NRSKNUI.ApplyThemeFont then
-        NRSKNUI:ApplyThemeFont(label, "small")
-    else
-        label:SetFontObject("GameFontNormalSmall")
-    end
+    NRSKNUI:ApplyThemeFont(label, "small")
     label:SetText(labelText or "")
     label:SetTextColor(Theme.accent[1], Theme.accent[2], Theme.accent[3], 1)
     container.label = label

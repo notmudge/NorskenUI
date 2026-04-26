@@ -58,7 +58,6 @@ function GUIFrame:CreateText(parent, titleText, config)
     NRSKNUI:ApplyThemeFont(title, "large")
     title:SetText(titleText or "")
     title:SetTextColor(Theme.textSecondary[1], Theme.textSecondary[2], Theme.textSecondary[3], 1)
-    title:SetShadowColor(0, 0, 0, 0)
 
     local titleHeight = title:GetStringHeight()
     local smolSpacer = 2
@@ -88,7 +87,6 @@ function GUIFrame:CreateText(parent, titleText, config)
     end
     label:SetText(ResolveLabelText(labelText))
     label:SetTextColor(Theme.textSecondary[1], Theme.textSecondary[2], Theme.textSecondary[3], 1)
-    label:SetShadowColor(0, 0, 0, 0)
 
     function row:SetEnabled(enabled)
         if enabled then

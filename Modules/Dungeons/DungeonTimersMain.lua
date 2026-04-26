@@ -13,24 +13,21 @@ local DT = NorskenUI:NewModule("DungeonTimers", "AceEvent-3.0", "AceTimer-3.0")
 local CreateFrame = CreateFrame
 local GetTime = GetTime
 local unpack = unpack
-local floor = math.floor
-local pairs = pairs
-local ipairs = ipairs
+local pairs, ipairs = pairs, ipairs
 local wipe = wipe
 local type = type
 local select = select
-local IsInInstance = IsInInstance
-local GetInstanceInfo = GetInstanceInfo
+local IsInInstance, GetInstanceInfo = IsInInstance, GetInstanceInfo
 local CopyTable = CopyTable
 local pcall = pcall
 local issecretvalue = issecretvalue
-local tostring = tostring
-local tonumber = tonumber
-local math_min = math.min
-local table_insert = table.insert
+local tostring, tonumber = tostring, tonumber
 local GetSpecialization = GetSpecialization
 local GetSpecializationRole = GetSpecializationRole
 local PlaySoundFile = PlaySoundFile
+local floor = math.floor
+local math_min = math.min
+local table_insert = table.insert
 local C_Spell = C_Spell
 
 DT.triggerFrames = {}
@@ -40,12 +37,7 @@ DT.scheduledScans = {}
 
 local instanceIdToDungeonKey = nil
 local VISUAL_UPDATE_INTERVAL = 0.033
-
-local ROLE_TO_TRIGGER_FIELD = {
-    TANK = "loadRoleTank",
-    HEALER = "loadRoleHealer",
-    DAMAGER = "loadRoleDPS",
-}
+local ROLE_TO_TRIGGER_FIELD = { TANK = "loadRoleTank", HEALER = "loadRoleHealer", DAMAGER = "loadRoleDPS", }
 
 local function CheckLoadConditions(trigger, isPreview)
     if isPreview or not trigger.loadRoleEnabled then return true end
@@ -59,17 +51,13 @@ local function PlayTriggerSound(soundName, isPreview)
     local LSM = NRSKNUI.LSM
     if not LSM then return end
     local file = LSM:Fetch("sound", soundName)
-    if file then
-        PlaySoundFile(file, "Master")
-    end
+    if file then PlaySoundFile(file, "Master") end
 end
 
 function DT:UpdateDB()
     if NRSKNUI.db and NRSKNUI.db.profile then
         self.db = NRSKNUI.db.profile.DungeonTimers
-        if self.db and not self.db.Dungeons then
-            self.db.Dungeons = {}
-        end
+        if self.db and not self.db.Dungeons then self.db.Dungeons = {} end
     end
 end
 
@@ -431,17 +419,8 @@ function DT:FormatText(formatStr, config, barData, remaining)
     return result
 end
 
---TODO: Merge
-function DT:GetDisplayText(config, barData, remaining)
-    return self:FormatText(config.textFormat, config, barData, remaining)
-end
-
-function DT:GetBarText1(config, barData, remaining)
-    return self:FormatText(config.barText1Format, config, barData, remaining)
-end
-
-function DT:GetBarText2(config, barData, remaining)
-    return self:FormatText(config.barText2Format, config, barData, remaining)
+function DT:GetFormattedText(formatKey, config, barData, remaining)
+    return self:FormatText(config[formatKey], config, barData, remaining)
 end
 
 function DT:CompareValue(value, operator, target)
@@ -501,6 +480,7 @@ end
 
 function DT:MatchesTrigger(trigger, barData)
     if not CheckLoadConditions(trigger, barData.isPreview) then return false end
+    if trigger.excludeCastBars and barData.isCastBar then return false end
     if not self:CheckSpellId(trigger, barData.spellId) then return false end
     if not self:CheckMessage(trigger, barData.text) then return false end
     if not self:CheckCount(trigger, barData.count) then return false end
@@ -680,21 +660,21 @@ function DT:ShowTriggerDisplay(dungeonKey, triggerId, trigger, barData)
             frame.text1:ClearAllPoints()
             frame.text1:SetPoint(config.barText1Justify, frame.bar, config.barText1Justify, config.barText1XOffset,
                 config.barText1YOffset)
-            frame.text1:SetText(self:GetBarText1(config, barData, remaining))
+            frame.text1:SetText(self:GetFormattedText("barText1Format", config, barData, remaining))
             if frame.text1._nrsknSoftOutline then frame.text1._nrsknSoftOutline:_ApplyOffsets() end
         end
         if frame.text2 then
             frame.text2:ClearAllPoints()
             frame.text2:SetPoint(config.barText2Justify, frame.bar, config.barText2Justify, config.barText2XOffset,
                 config.barText2YOffset)
-            frame.text2:SetText(self:GetBarText2(config, barData, remaining))
+            frame.text2:SetText(self:GetFormattedText("barText2Format", config, barData, remaining))
             if frame.text2._nrsknSoftOutline then frame.text2._nrsknSoftOutline:_ApplyOffsets() end
         end
     else
         if frame.displayText then
             frame.displayText:ClearAllPoints()
             frame.displayText:SetPoint(config.textJustify, frame, config.textJustify, 0, 0)
-            frame.displayText:SetText(self:GetDisplayText(config, barData, remaining))
+            frame.displayText:SetText(self:GetFormattedText("textFormat", config, barData, remaining))
             if frame.displayText._nrsknSoftOutline then frame.displayText._nrsknSoftOutline:_ApplyOffsets() end
         end
     end
@@ -976,14 +956,17 @@ function DT:OnVisualUpdate()
 
                     if frame.isBarDisplay then
                         if frame.text1 then
-                            frame.text1:SetText(self:GetBarText1(config, barData, remaining))
+                            frame.text1:SetText(self:GetFormattedText("barText1Format", config, barData,
+                                remaining))
                         end
                         if frame.text2 then
-                            frame.text2:SetText(self:GetBarText2(config, barData, remaining))
+                            frame.text2:SetText(self:GetFormattedText("barText2Format", config, barData,
+                                remaining))
                         end
                     else
                         if frame.displayText then
-                            frame.displayText:SetText(self:GetDisplayText(config, barData, remaining))
+                            frame.displayText:SetText(self:GetFormattedText("textFormat", config,
+                            barData, remaining))
                         end
                     end
                 end
@@ -1128,9 +1111,7 @@ function DT:GetSortedTriggerIds(dungeonKey)
     if not dungeonData or not dungeonData.Triggers then return {} end
 
     local ids = {}
-    for id in pairs(dungeonData.Triggers) do
-        table.insert(ids, id)
-    end
+    for id in pairs(dungeonData.Triggers) do table.insert(ids, id) end
     table.sort(ids, function(a, b) return tonumber(a) < tonumber(b) end)
     return ids
 end
@@ -1173,15 +1154,6 @@ function DT:MoveTrigger(dungeonKey, triggerId, direction)
     end
 
     return targetId
-end
-
---TODO: merge
-function DT:MoveTriggerUp(dungeonKey, triggerId)
-    return self:MoveTrigger(dungeonKey, triggerId, "up")
-end
-
-function DT:MoveTriggerDown(dungeonKey, triggerId)
-    return self:MoveTrigger(dungeonKey, triggerId, "down")
 end
 
 function DT:PreviewTrigger(dungeonKey, triggerId, loopCallback)

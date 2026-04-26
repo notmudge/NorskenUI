@@ -203,11 +203,11 @@ function NRSKNUI.GUI.CreateMiniSidebar(container, options)
     local renderItem = options.renderItem
     local onItemSelected = options.onItemSelected
     local getItemKey = options.getItemKey or function(item) return item.key or item.id or item.name end
+    local customListRendering = options.customListRendering or false
 
     local panel = CreateFrame("Frame", nil, container)
     panel:SetAllPoints()
 
-    -- Sidebar frame
     local sidebar = CreateFrame("Frame", nil, panel)
     sidebar:SetWidth(sidebarWidth)
     sidebar:SetPoint("TOPLEFT", panel, "TOPLEFT", 0, 0)
@@ -223,7 +223,6 @@ function NRSKNUI.GUI.CreateMiniSidebar(container, options)
     sidebarBorder:SetPoint("BOTTOMRIGHT", sidebar, "BOTTOMRIGHT", 0, 0)
     sidebarBorder:SetColorTexture(Theme.border[1], Theme.border[2], Theme.border[3], 1)
 
-    -- Button area at top of sidebar (for action buttons like "+ New")
     local buttonAreaConfig = options.buttonArea or {}
     local buttonAreaHeight = 0
     local actionButtons = {}
@@ -232,28 +231,149 @@ function NRSKNUI.GUI.CreateMiniSidebar(container, options)
     buttonArea:SetPoint("TOPLEFT", sidebar, "TOPLEFT", listPadding, -listPadding)
     buttonArea:SetPoint("TOPRIGHT", sidebar, "TOPRIGHT", -listPadding, -listPadding)
 
-    if buttonAreaConfig.buttons and #buttonAreaConfig.buttons > 0 then
-        local btnHeight = buttonAreaConfig.buttonHeight or 26
-        buttonAreaHeight = btnHeight + listPadding
+    local hasButtons = (buttonAreaConfig.buttons and #buttonAreaConfig.buttons > 0) or
+        (buttonAreaConfig.rows and #buttonAreaConfig.rows > 0)
 
-        local GUIFrame = NRSKNUI.GUIFrame
-        for i, btnConfig in ipairs(buttonAreaConfig.buttons) do
-            local btn = GUIFrame:CreateButton(buttonArea, btnConfig.text, {
-                height = btnHeight,
-                bgColor = Theme.bgLight,
-                callback = btnConfig.onClick,
-            })
-            btn:SetPoint("TOPLEFT", buttonArea, "TOPLEFT", 0, 0)
-            btn:SetPoint("TOPRIGHT", buttonArea, "TOPRIGHT", 0, 0)
-            actionButtons[i] = btn
+    if hasButtons then
+        local btnHeight = buttonAreaConfig.buttonHeight or 22
+        local layout = buttonAreaConfig.layout or "vertical"
+        local spacing = buttonAreaConfig.spacing or listPadding
+        local rowSpacing = buttonAreaConfig.rowSpacing or 2
+        local bgColor = Theme.bgLight
+
+        local borderBottom = buttonArea:CreateTexture(nil, "ARTWORK")
+        borderBottom:SetHeight(1)
+        borderBottom:SetPoint("BOTTOMLEFT", buttonArea, "BOTTOMLEFT", 0, -Theme.paddingSmall)
+        borderBottom:SetPoint("BOTTOMRIGHT", buttonArea, "BOTTOMRIGHT", 0, 0)
+        borderBottom:SetColorTexture(Theme.accent[1], Theme.accent[2], Theme.accent[3], 1)
+
+        if layout == "horizontal" then
+            local rows = buttonAreaConfig.rows or { buttonAreaConfig.buttons }
+            local numRows = #rows
+            buttonAreaHeight = (btnHeight * numRows) + (rowSpacing * (numRows - 1)) + listPadding
+            local availableWidth = sidebarWidth - listPadding * 2
+            local buttonIndex = 1
+
+            for rowIndex, rowButtons in ipairs(rows) do
+                local numButtons = #rowButtons
+                local totalSpacing = spacing * (numButtons - 1)
+                local btnWidth = (availableWidth - totalSpacing) / numButtons
+                local rowYOffset = (rowIndex - 1) * (btnHeight + rowSpacing)
+
+                for colIndex, btnConfig in ipairs(rowButtons) do
+                    local btn = CreateFrame("Button", nil, buttonArea, "BackdropTemplate")
+                    btn:SetSize(btnWidth, btnHeight)
+                    btn._bgColor = bgColor
+
+                    local xOffset = (colIndex - 1) * (btnWidth + spacing)
+                    btn:SetPoint("TOPLEFT", buttonArea, "TOPLEFT", xOffset, -rowYOffset)
+
+                    btn:SetBackdrop({
+                        bgFile = "Interface\\Buttons\\WHITE8X8",
+                        edgeFile = "Interface\\Buttons\\WHITE8X8",
+                        edgeSize = 1,
+                    })
+                    btn:SetBackdropColor(bgColor[1], bgColor[2], bgColor[3], 1)
+                    btn:SetBackdropBorderColor(Theme.border[1], Theme.border[2], Theme.border[3], 1)
+
+                    local hoverAnimGroup = btn:CreateAnimationGroup()
+                    hoverAnimGroup:CreateAnimation("Animation"):SetDuration(Theme.animDuration or 0.15)
+
+                    local borderColorFrom = {}
+                    local borderColorTo = {}
+
+                    hoverAnimGroup:SetScript("OnUpdate", function(anim)
+                        local progress = anim:GetProgress() or 0
+                        local r = borderColorFrom.r + (borderColorTo.r - borderColorFrom.r) * progress
+                        local g = borderColorFrom.g + (borderColorTo.g - borderColorFrom.g) * progress
+                        local b = borderColorFrom.b + (borderColorTo.b - borderColorFrom.b) * progress
+                        btn:SetBackdropBorderColor(r, g, b, 1)
+                    end)
+
+                    hoverAnimGroup:SetScript("OnFinished", function()
+                        btn:SetBackdropBorderColor(borderColorTo.r, borderColorTo.g, borderColorTo.b, 1)
+                    end)
+
+                    local function AnimateBorderColor(toAccent)
+                        hoverAnimGroup:Stop()
+                        local currentR, currentG, currentB = btn:GetBackdropBorderColor()
+                        borderColorFrom.r, borderColorFrom.g, borderColorFrom.b = currentR, currentG, currentB
+                        if toAccent then
+                            borderColorTo.r, borderColorTo.g, borderColorTo.b = Theme.accent[1], Theme.accent[2], Theme.accent[3]
+                        else
+                            borderColorTo.r, borderColorTo.g, borderColorTo.b = Theme.border[1], Theme.border[2], Theme.border[3]
+                        end
+                        hoverAnimGroup:Play()
+                    end
+
+                    if btnConfig.icon then
+                        local iconSize = btnHeight - 6
+                        local icon = btn:CreateTexture(nil, "ARTWORK")
+                        icon:SetSize(iconSize, iconSize)
+                        icon:SetPoint("CENTER")
+                        icon:SetTexture(btnConfig.icon)
+                        icon:SetVertexColor(Theme.accent[1], Theme.accent[2], Theme.accent[3], 1)
+                        if btnConfig.iconRotation then
+                            icon:SetRotation(math.rad(btnConfig.iconRotation))
+                        end
+                        btn._icon = icon
+                    else
+                        local label = btn:CreateFontString(nil, "OVERLAY")
+                        label:SetPoint("CENTER")
+                        NRSKNUI:ApplyThemeFont(label, "small")
+                        label:SetText(btnConfig.text or "")
+                        label:SetTextColor(Theme.accent[1], Theme.accent[2], Theme.accent[3], 1)
+                        btn._label = label
+                    end
+
+                    btn:SetScript("OnEnter", function(self)
+                        AnimateBorderColor(true)
+                        if btnConfig.tooltip then
+                            GameTooltip:SetOwner(self, "ANCHOR_TOP", 0, 4)
+                            GameTooltip:SetText(btnConfig.tooltip, Theme.accent[1], Theme.accent[2], Theme.accent[3], 1)
+                            GameTooltip:Show()
+                        end
+                    end)
+
+                    btn:SetScript("OnLeave", function(self)
+                        AnimateBorderColor(false)
+                        self:SetBackdropColor(self._bgColor[1], self._bgColor[2], self._bgColor[3], 1)
+                        GameTooltip:Hide()
+                    end)
+
+                    btn:SetScript("OnMouseDown", function(self)
+                        self:SetBackdropColor(Theme.selectedBg[1], Theme.selectedBg[2], Theme.selectedBg[3], Theme.selectedBg[4] or 1)
+                    end)
+
+                    btn:SetScript("OnMouseUp", function(self)
+                        self:SetBackdropColor(self._bgColor[1], self._bgColor[2], self._bgColor[3], 1)
+                    end)
+
+                    btn:SetScript("OnClick", btnConfig.onClick)
+                    actionButtons[buttonIndex] = btn
+                    buttonIndex = buttonIndex + 1
+                end
+            end
+        else
+            buttonAreaHeight = btnHeight + listPadding
+            local GUIFrame = NRSKNUI.GUIFrame
+            for i, btnConfig in ipairs(buttonAreaConfig.buttons) do
+                local btn = GUIFrame:CreateButton(buttonArea, btnConfig.text, {
+                    height = btnHeight,
+                    bgColor = Theme.bgLight,
+                    callback = btnConfig.onClick,
+                })
+                btn:SetPoint("TOPLEFT", buttonArea, "TOPLEFT", 0, 0)
+                btn:SetPoint("TOPRIGHT", buttonArea, "TOPRIGHT", 0, 0)
+                actionButtons[i] = btn
+            end
         end
     end
     buttonArea:SetHeight(buttonAreaHeight)
 
-    -- List area (scrollable)
     local listFrame = CreateFrame("ScrollFrame", nil, sidebar)
     if buttonAreaHeight > 0 then
-        listFrame:SetPoint("TOPLEFT", buttonArea, "BOTTOMLEFT", 0, -listPadding)
+        listFrame:SetPoint("TOPLEFT", buttonArea, "BOTTOMLEFT", 0, -listPadding - Theme.paddingMedium)
     else
         listFrame:SetPoint("TOPLEFT", sidebar, "TOPLEFT", listPadding, -listPadding)
     end
@@ -287,12 +407,16 @@ function NRSKNUI.GUI.CreateMiniSidebar(container, options)
     listChild:HookScript("OnSizeChanged", UpdateListScrollbar)
     listFrame:HookScript("OnSizeChanged", UpdateListScrollbar)
 
-    -- Button pool for list items
     local buttonPool = {}
     local activeButtons = {}
     local selectedKey = nil
 
+    local function SetListHeight(height)
+        listChild:SetHeight(height)
+    end
+
     local function GetPooledButton()
+        if customListRendering then return nil end
         for _, btn in ipairs(buttonPool) do
             if not btn._inUse then
                 btn._inUse = true
@@ -325,11 +449,11 @@ function NRSKNUI.GUI.CreateMiniSidebar(container, options)
         accentBar:Hide()
         btn._accentBar = accentBar
 
+        local iconSize = itemHeight - 6
         local iconBorder = CreateFrame("Frame", nil, btn, "BackdropTemplate")
-        iconBorder:SetSize(20, 20)
+        iconBorder:SetSize(iconSize + 2, iconSize + 2)
         iconBorder:SetPoint("LEFT", btn, "LEFT", 5, 0)
         iconBorder:SetBackdrop({
-            bgFile = nil,
             edgeFile = "Interface\\Buttons\\WHITE8X8",
             edgeSize = 1,
         })
@@ -337,7 +461,7 @@ function NRSKNUI.GUI.CreateMiniSidebar(container, options)
         btn._iconBorder = iconBorder
 
         local icon = btn:CreateTexture(nil, "ARTWORK")
-        icon:SetSize(18, 18)
+        icon:SetSize(iconSize, iconSize)
         icon:SetPoint("CENTER", iconBorder, "CENTER", 0, 0)
         btn._icon = icon
 
@@ -389,6 +513,11 @@ function NRSKNUI.GUI.CreateMiniSidebar(container, options)
     end
 
     local function RefreshList()
+        if customListRendering then
+            C_Timer.After(0, UpdateListScrollbar)
+            return
+        end
+
         ReleaseAllButtons()
 
         if not getItems then return end
@@ -445,12 +574,10 @@ function NRSKNUI.GUI.CreateMiniSidebar(container, options)
         return nil
     end
 
-    -- Content area frame (right side)
     local contentFrame = CreateFrame("Frame", nil, panel)
     contentFrame:SetPoint("TOPLEFT", sidebar, "TOPRIGHT", 0, 0)
     contentFrame:SetPoint("BOTTOMRIGHT", panel, "BOTTOMRIGHT", 0, 0)
 
-    -- Create content area based on type
     local contentArea
     local contentType = options.contentType or "basic"
     local contentWidth = options.contentWidth or (Theme.contentWidth - sidebarWidth - 1)
@@ -500,11 +627,14 @@ function NRSKNUI.GUI.CreateMiniSidebar(container, options)
         actionButtons = actionButtons,
         contentArea = contentArea,
 
-        -- List management
         RefreshList = RefreshList,
         SelectItem = SelectItem,
         GetSelectedKey = GetSelectedKey,
         GetSelectedItem = GetSelectedItem,
+
+        listChild = listChild,
+        SetListHeight = SetListHeight,
+        UpdateListScrollbar = UpdateListScrollbar,
 
         ApplyThemeColors = ApplyThemeColors,
     }

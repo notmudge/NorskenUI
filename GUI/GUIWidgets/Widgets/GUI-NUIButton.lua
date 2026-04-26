@@ -161,8 +161,8 @@ function GUIFrame:CreateButton(parent, buttonText, config)
     button:SetScript("OnEnter", function(btn)
         AnimateBorderColor(true)
         if btn._tooltip then
-            GameTooltip:SetOwner(btn, "ANCHOR_TOP")
-            GameTooltip:SetText(btn._tooltip, 1, 1, 1, 1, true)
+            GameTooltip:SetOwner(btn, "ANCHOR_TOP", 0, 4)
+            GameTooltip:SetText(btn._tooltip, Theme.accent[1], Theme.accent[2], Theme.accent[3], 1, false)
             GameTooltip:Show()
         end
     end)

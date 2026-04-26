@@ -148,8 +148,15 @@ function DUR:UpdateText()
     end
 
     -- Sync softoutline after frame is shown
-    if self.Text.softOutline then
-        self.Text.softOutline:SetShown(true)
+    local outline = self.Text._nrsknSoftOutline
+    if outline and outline.shadows then
+        local font, size = self.Text:GetFont()
+        if font and size then
+            outline:SetFont(font, size)
+        end
+        outline:SetText(self.Text:GetText() or "")
+        outline:_ApplyOffsets()
+        outline:SetShown(true)
     end
 end
 
@@ -197,8 +204,15 @@ function DUR:UpdateWarning()
     self.WarningText:SetTextColor(unpack(color))
 
     -- Sync softoutline after text is set
-    if self.WarningText.softOutline then
-        self.WarningText.softOutline:SetShown(true)
+    local outline = self.WarningText._nrsknSoftOutline
+    if outline and outline.shadows then
+        local font, size = self.WarningText:GetFont()
+        if font and size then
+            outline:SetFont(font, size)
+        end
+        outline:SetText(self.WarningText:GetText() or "")
+        outline:_ApplyOffsets()
+        outline:SetShown(true)
     end
 
     DUR:OnEvent()

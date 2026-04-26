@@ -2,6 +2,9 @@
 ---@class NRSKNUI
 local NRSKNUI = select(2, ...)
 
+--TODO: Flyout buttons are not properly part of the mouseover system, so if you mouseover the flyout bar, it will fade out
+--TODO: Flyout buttonbar growth direction
+
 -- Check for addon object
 if not NorskenUI then
     error("ActionBars: Addon object not initialized. Check file load order!")

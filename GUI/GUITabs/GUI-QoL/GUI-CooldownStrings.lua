@@ -13,7 +13,8 @@ local RAID_CLASS_COLORS = RAID_CLASS_COLORS
 local C_Timer = C_Timer
 
 local SIDEBAR_WIDTH = 192
-local ITEM_HEIGHT = 26
+local ITEM_HEIGHT = 28
+local BUTTON_HEIGHT = 28
 local LIST_PADDING = 4
 
 local function GetModule()
@@ -161,9 +162,10 @@ GUIFrame:RegisterPanel("CooldownStrings", function(container)
         end,
 
         buttonArea = {
+            buttonHeight = BUTTON_HEIGHT,
             buttons = {
                 {
-                    text = "+ New Profile",
+                    text = "New Profile",
                     onClick = function()
                         NRSKNUI:CreatePrompt(
                             "New CDM Profile",

@@ -707,24 +707,11 @@ function NRSKNUI:ApplyThemeFont(fontString, size)
         fontSize = Theme.fontSizeNormal or 12
     end
 
-    -- Get font face and outline
-    local fontFace = Theme.fontFace or self.FONT or "Fonts\\FRIZQT__.TTF"
-    local fontOutline = Theme.fontOutline or "OUTLINE"
+    -- Get font face
+    local fontFace = Theme.fontFace or self.FONT or "Expressway"
 
-    -- Handle "NONE" outline option
-    if fontOutline == "NONE" then
-        fontOutline = ""
-    end
-
-    -- Apply font settings
-    fontString:SetFont(fontFace, fontSize, fontOutline)
-
-    -- Apply shadow (disabled by default - alpha 0)
-    if Theme.fontShadow then
-        fontString:SetShadowOffset(1, -1)
-        fontString:SetShadowColor(0, 0, 0, 0.8)
-    else
-        fontString:SetShadowOffset(0, 0)
-        fontString:SetShadowColor(0, 0, 0, 0)
-    end
+    -- Apply font with OUTLINE, no shadow
+    fontString:SetFont(fontFace, fontSize, "OUTLINE")
+    fontString:SetShadowOffset(0, 0)
+    fontString:SetShadowColor(0, 0, 0, 0)
 end
