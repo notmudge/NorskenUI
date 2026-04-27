@@ -159,34 +159,28 @@ GUIFrame:RegisterContent("combatTimer", function(scrollChild, yOffset)
             UpdateBackdropState()
         end
     })
-    row4a:AddWidget(backdropCheck, 0.34)
+    row4a:AddWidget(backdropCheck, 1)
     manager:Register(backdropCheck, "all")
+    card4:AddRow(row4a, Theme.rowHeight)
 
-    local bgColor = GUIFrame:CreateColorPicker(row4a, "Background", {
+    local separator = GUIFrame:CreateSeparator(card4.content)
+    card4:AddRow(separator, Theme.rowHeightSeparator)
+
+    local row4ab = GUIFrame:CreateRow(card4.content, Theme.rowHeight)
+    local bgColor = GUIFrame:CreateColorPicker(row4ab, "Background Color", {
         color = db.Backdrop.Color,
         callback = function(r, g, b, a)
             db.Backdrop.Color = { r, g, b, a }
             ApplySettings()
         end
     })
-    row4a:AddWidget(bgColor, 0.33)
+    row4ab:AddWidget(bgColor, 1)
     manager:Register(bgColor, "all")
     table_insert(backdropSubWidgets, bgColor)
+    card4:AddRow(row4ab, Theme.rowHeight)
 
-    local borderColor = GUIFrame:CreateColorPicker(row4a, "Border", {
-        color = db.Backdrop.BorderColor,
-        callback = function(r, g, b, a)
-            db.Backdrop.BorderColor = { r, g, b, a }
-            ApplySettings()
-        end
-    })
-    row4a:AddWidget(borderColor, 0.33)
-    manager:Register(borderColor, "all")
-    table_insert(backdropSubWidgets, borderColor)
-    card4:AddRow(row4a, Theme.rowHeight)
-
-    local row4b = GUIFrame:CreateRow(card4.content, Theme.rowHeightLast)
-    local bgWidth = GUIFrame:CreateSlider(row4b, "Width", {
+    local row4b = GUIFrame:CreateRow(card4.content, Theme.rowHeight)
+    local bgWidth = GUIFrame:CreateSlider(row4b, "Background Width", {
         min = 1,
         max = 600,
         step = 1,
@@ -196,11 +190,11 @@ GUIFrame:RegisterContent("combatTimer", function(scrollChild, yOffset)
             ApplySettings()
         end
     })
-    row4b:AddWidget(bgWidth, 0.34)
+    row4b:AddWidget(bgWidth, 0.5)
     manager:Register(bgWidth, "all")
     table_insert(backdropSubWidgets, bgWidth)
 
-    local bgHeight = GUIFrame:CreateSlider(row4b, "Height", {
+    local bgHeight = GUIFrame:CreateSlider(row4b, "Background Height", {
         min = 1,
         max = 600,
         step = 1,
@@ -210,11 +204,27 @@ GUIFrame:RegisterContent("combatTimer", function(scrollChild, yOffset)
             ApplySettings()
         end
     })
-    row4b:AddWidget(bgHeight, 0.33)
+    row4b:AddWidget(bgHeight, 0.5)
     manager:Register(bgHeight, "all")
     table_insert(backdropSubWidgets, bgHeight)
+    card4:AddRow(row4b, Theme.rowHeight)
 
-    local borderSize = GUIFrame:CreateSlider(row4b, "Border Size", {
+    local separator2 = GUIFrame:CreateSeparator(card4.content)
+    card4:AddRow(separator2, Theme.rowHeightSeparator)
+
+    local row4bc = GUIFrame:CreateRow(card4.content, Theme.rowHeightLast)
+    local borderColor = GUIFrame:CreateColorPicker(row4bc, "Border Color", {
+        color = db.Backdrop.BorderColor,
+        callback = function(r, g, b, a)
+            db.Backdrop.BorderColor = { r, g, b, a }
+            ApplySettings()
+        end
+    })
+    row4bc:AddWidget(borderColor, 0.5)
+    manager:Register(borderColor, "all")
+    table_insert(backdropSubWidgets, borderColor)
+
+    local borderSize = GUIFrame:CreateSlider(row4bc, "Border Size", {
         min = 1,
         max = 10,
         step = 1,
@@ -224,10 +234,10 @@ GUIFrame:RegisterContent("combatTimer", function(scrollChild, yOffset)
             ApplySettings()
         end
     })
-    row4b:AddWidget(borderSize, 0.33)
+    row4bc:AddWidget(borderSize, 0.5)
     manager:Register(borderSize, "all")
     table_insert(backdropSubWidgets, borderSize)
-    card4:AddRow(row4b, Theme.rowHeightLast, 0)
+    card4:AddRow(row4bc, Theme.rowHeightLast, 0)
 
     yOffset = card4:GetNextOffset()
 

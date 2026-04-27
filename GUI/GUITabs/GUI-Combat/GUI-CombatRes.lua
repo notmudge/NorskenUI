@@ -85,7 +85,9 @@ GUIFrame:RegisterContent("battleRes", function(scrollChild, yOffset)
 
     local row2b = GUIFrame:CreateRow(card2.content, Theme.rowHeight)
     local spacingSlider = GUIFrame:CreateSlider(row2b, "Text Spacing", {
-        min = 0, max = 20, step = 1,
+        min = 0,
+        max = 20,
+        step = 1,
         value = db.TextSpacing,
         callback = function(val)
             db.TextSpacing = val
@@ -97,7 +99,7 @@ GUIFrame:RegisterContent("battleRes", function(scrollChild, yOffset)
 
     local growthDropdown = GUIFrame:CreateDropdown(row2b, "Growth Direction", {
         options = {
-            { key = "LEFT", text = "Left" },
+            { key = "LEFT",  text = "Left" },
             { key = "RIGHT", text = "Right" },
         },
         value = db.GrowthDirection,
@@ -173,35 +175,31 @@ GUIFrame:RegisterContent("battleRes", function(scrollChild, yOffset)
             UpdateBackdropState()
         end
     })
-    row3a:AddWidget(backdropCheck, 0.34)
+    row3a:AddWidget(backdropCheck, 1)
     manager:Register(backdropCheck, "all")
+    card3:AddRow(row3a, Theme.rowHeight)
 
-    local bgColor = GUIFrame:CreateColorPicker(row3a, "Background", {
+    local separator = GUIFrame:CreateSeparator(card3.content)
+    card3:AddRow(separator, Theme.rowHeightSeparator)
+
+    local row3ab = GUIFrame:CreateRow(card3.content, Theme.rowHeight)
+    local bgColor = GUIFrame:CreateColorPicker(row3ab, "Background Color", {
         color = db.Backdrop.Color,
         callback = function(r, g, b, a)
             db.Backdrop.Color = { r, g, b, a }
             ApplySettings()
         end
     })
-    row3a:AddWidget(bgColor, 0.33)
+    row3ab:AddWidget(bgColor, 1)
     manager:Register(bgColor, "all")
     table_insert(backdropSubWidgets, bgColor)
+    card3:AddRow(row3ab, Theme.rowHeight)
 
-    local borderColor = GUIFrame:CreateColorPicker(row3a, "Border", {
-        color = db.Backdrop.BorderColor,
-        callback = function(r, g, b, a)
-            db.Backdrop.BorderColor = { r, g, b, a }
-            ApplySettings()
-        end
-    })
-    row3a:AddWidget(borderColor, 0.33)
-    manager:Register(borderColor, "all")
-    table_insert(backdropSubWidgets, borderColor)
-    card3:AddRow(row3a, Theme.rowHeight)
-
-    local row3b = GUIFrame:CreateRow(card3.content, Theme.rowHeightLast)
-    local frameWidthSlider = GUIFrame:CreateSlider(row3b, "Width", {
-        min = 50, max = 300, step = 1,
+    local row3b = GUIFrame:CreateRow(card3.content, Theme.rowHeight)
+    local frameWidthSlider = GUIFrame:CreateSlider(row3b, "Background Width", {
+        min = 50,
+        max = 300,
+        step = 1,
         value = db.Backdrop.FrameWidth,
         callback = function(val)
             db.Backdrop.FrameWidth = val
@@ -212,8 +210,10 @@ GUIFrame:RegisterContent("battleRes", function(scrollChild, yOffset)
     manager:Register(frameWidthSlider, "all")
     table_insert(backdropSubWidgets, frameWidthSlider)
 
-    local frameHeightSlider = GUIFrame:CreateSlider(row3b, "Height", {
-        min = 16, max = 100, step = 1,
+    local frameHeightSlider = GUIFrame:CreateSlider(row3b, "Background Height", {
+        min = 16,
+        max = 100,
+        step = 1,
         value = db.Backdrop.FrameHeight,
         callback = function(val)
             db.Backdrop.FrameHeight = val
@@ -223,7 +223,23 @@ GUIFrame:RegisterContent("battleRes", function(scrollChild, yOffset)
     row3b:AddWidget(frameHeightSlider, 0.5)
     manager:Register(frameHeightSlider, "all")
     table_insert(backdropSubWidgets, frameHeightSlider)
-    card3:AddRow(row3b, Theme.rowHeightLast, 0)
+    card3:AddRow(row3b, Theme.rowHeight)
+
+    local separator2 = GUIFrame:CreateSeparator(card3.content)
+    card3:AddRow(separator2, Theme.rowHeightSeparator)
+
+    local row3bc = GUIFrame:CreateRow(card3.content, Theme.rowHeightLast)
+    local borderColor = GUIFrame:CreateColorPicker(row3bc, "Border Color", {
+        color = db.Backdrop.BorderColor,
+        callback = function(r, g, b, a)
+            db.Backdrop.BorderColor = { r, g, b, a }
+            ApplySettings()
+        end
+    })
+    row3bc:AddWidget(borderColor, 1)
+    manager:Register(borderColor, "all")
+    table_insert(backdropSubWidgets, borderColor)
+    card3:AddRow(row3bc, Theme.rowHeightLast, 0)
 
     yOffset = card3:GetNextOffset()
 
