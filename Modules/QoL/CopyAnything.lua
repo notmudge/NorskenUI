@@ -196,7 +196,9 @@ function CopyAnything:OnEnable()
         self.frame = CreateFrame("Frame", "NRSKNUI_CopyFrame")
         self.frame:SetScript("OnKeyDown", function(frame, key)
             local handled = self:TryCopy(key)
-            frame:SetPropagateKeyboardInput(not handled)
+            if not InCombatLockdown() then
+                frame:SetPropagateKeyboardInput(not handled)
+            end
         end)
     end
     self.frame:EnableKeyboard(true)
