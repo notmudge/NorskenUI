@@ -9,7 +9,6 @@ local ipairs = ipairs
 local pairs = pairs
 
 GUIFrame:RegisterContent("CustomSkin_Externals", function(scrollChild, yOffset)
-    if NRSKNUI:ShouldNotLoadModule() then return yOffset end
     local db = NRSKNUI.db and NRSKNUI.db.profile.Skinning.ExternalBuffTracking
     if not db then return GUIFrame:ShowDBError(scrollChild, yOffset) end
 
