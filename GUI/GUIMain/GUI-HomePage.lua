@@ -1,213 +1,93 @@
--- NorskenUI namespace
 ---@class NRSKNUI
 local NRSKNUI = select(2, ...)
 local GUIFrame = NRSKNUI.GUIFrame
 local Theme = NRSKNUI.Theme
 
--- Localization
 local UnitName = UnitName
 local UnitClass = UnitClass
-local GetRealmName = GetRealmName
-local ipairs = ipairs
-local ReloadUI = ReloadUI
 
--- Addon info
-local ADDON_VERSION = NRSKNUI.Version
-local ADDON_AUTHOR = NRSKNUI.Author
-
--- Register HomePage content
 GUIFrame:RegisterContent("HomePage", function(scrollChild, yOffset)
+    local db = NRSKNUI.db and NRSKNUI.db.profile
+    if not db then return GUIFrame:ShowDBError(scrollChild, yOffset) end
+
+    -- Card 1
+    local welcomeCard = GUIFrame:CreateCard(scrollChild, "Welcome to NorskenUI", yOffset)
     local _, class = UnitClass("player")
-    local classColor = RAID_CLASS_COLORS[class] or { r = 1, g = 1, b = 1 }
+    local playerName = UnitName("player")
 
-    ----------------------------------------------------------------
-    -- Card 1: Welcome Header
-    ----------------------------------------------------------------
-    local card1 = GUIFrame:CreateCard(scrollChild, "Welcome to NorskenUI", yOffset)
+    welcomeCard:AddLabel("Hello, " .. NRSKNUI:ColorTextByClass(playerName, class) .. "!", "normal")
+    welcomeCard:AddSpacing(4)
 
-    -- Player greeting
-    local playerName = UnitName("player") or "Adventurer"
-    local greetingText = "Hello, |cff" ..
-        string.format("%02x%02x%02x", classColor.r * 255, classColor.g * 255, classColor.b * 255) ..
-        playerName .. "|r!"
-    local greetingLabel = card1:AddLabel(greetingText)
+    welcomeCard:AddLabel("Version: " .. NRSKNUI:ColorTextByTheme(NRSKNUI.Version), "normal")
+    welcomeCard:AddSpacing(4)
 
-    card1:AddSpacing(4)
+    welcomeCard:AddLabel("Active Profile: " .. NRSKNUI:ColorTextByTheme(NRSKNUI.db:GetCurrentProfile()), "normal")
 
-    -- Version and author info
-    local infoText = "Version: |cffffffff" .. ADDON_VERSION .. "|r  -  Author: |cffffffff" .. ADDON_AUTHOR .. "|r"
-    local infoLabel = card1:AddLabel(infoText)
-    infoLabel:SetTextColor(Theme.textMuted[1], Theme.textMuted[2], Theme.textMuted[3], 1)
+    local Sep = GUIFrame:CreateSeparator(welcomeCard.content)
+    welcomeCard:AddRow(Sep, Theme.rowHeightSeparator)
 
-    yOffset = yOffset + card1:GetContentHeight() + Theme.paddingSmall
-
-    ----------------------------------------------------------------
-    -- Card 2: Quick Actions
-    ----------------------------------------------------------------
-    local card2 = GUIFrame:CreateCard(scrollChild, "Quick Actions", yOffset)
-
-    local row1 = GUIFrame:CreateRow(card2.content, 38)
-
-    -- Edit Mode Button
-    local editModeBtn = GUIFrame:CreateButton(row1, "Toggle Anchors", {
-        width = 140,
-        height = 32,
-        callback = function()
-            if NRSKNUI.EditMode then
-                NRSKNUI.EditMode:Toggle()
-            end
-        end
+    local mapIconRow = GUIFrame:CreateRow(welcomeCard.content, Theme.rowHeight)
+    local mapIconCheck = GUIFrame:CreateCheckbox(mapIconRow, "Hide Minimap Icon", {
+        value = db.Minimap.hide,
+        callback = function(checked) db.Minimap.hide = checked end,
+        msgPopup = true,
+        msgText = "Hide Minimap Icon",
     })
-    row1:AddWidget(editModeBtn, 0.5)
+    mapIconRow:AddWidget(mapIconCheck, 1)
+    welcomeCard:AddRow(mapIconRow, Theme.rowHeight)
 
-    -- Reload UI Button
-    local reloadBtn = GUIFrame:CreateButton(row1, "Reload UI", {
-        width = 140,
-        height = 32,
-        callback = function()
-            ReloadUI()
-        end
+    local loginMsgRow = GUIFrame:CreateRow(welcomeCard.content, Theme.rowHeightLast)
+    local loginMsgCheck = GUIFrame:CreateCheckbox(loginMsgRow, "Show Login Message", {
+        value = db.Minimap.LoginMessage,
+        callback = function(checked) db.Minimap.LoginMessage = checked end,
+        msgPopup = true,
+        msgText = "Login Message",
     })
-    row1:AddWidget(reloadBtn, 0.5)
+    loginMsgRow:AddWidget(loginMsgCheck, 1)
+    welcomeCard:AddRow(loginMsgRow, Theme.rowHeightLast, 0)
 
-    card2:AddRow(row1, 38)
+    yOffset = welcomeCard:GetNextOffset()
 
-    card2:AddSpacing(4)
-    local tipLabel = card2:AddLabel(
-        "Use /nui edit to toggle Edit Mode from chat, also note that Edit Mode is very much WIP!")
-    tipLabel:SetTextColor(Theme.textMuted[1], Theme.textMuted[2], Theme.textMuted[3], 1)
+    -- Card 3
+    local elvUICard = GUIFrame:CreateCard(scrollChild, "ElvUI Integration", yOffset)
 
-    yOffset = yOffset + card2:GetContentHeight() + Theme.paddingSmall
-
-    ----------------------------------------------------------------
-    -- Card 1: ElvUI Intergration Card
-    ----------------------------------------------------------------
-    local ElvUIcard = GUIFrame:CreateCard(scrollChild, "ElvUI Intergration", yOffset)
-    local ElvUIDB = NRSKNUI.db.profile.UseElvUI
-
-    -- Enable Checkbox
-    local ElvUIrow = GUIFrame:CreateRow(ElvUIcard.content, 40)
-    local enableCheck = GUIFrame:CreateCheckbox(ElvUIrow, "Use ElvUI Skinning", {
-        value = ElvUIDB.Enabled ~= false,
+    local elvUIRow = GUIFrame:CreateRow(elvUICard.content, Theme.rowHeight)
+    local elvUICheck = GUIFrame:CreateCheckbox(elvUIRow, "Use ElvUI Skinning", {
+        value = db.UseElvUI.Enabled,
         callback = function(checked)
-            ElvUIDB.Enabled = checked
+            db.UseElvUI.Enabled = checked
             NRSKNUI:CreateReloadPrompt("Disabling/Enabling this requires a reload to take full effect.")
         end,
         msgPopup = true,
         msgText = "Use ElvUI",
-        msgOn = "On",
-        msgOff = "Off",
     })
-    ElvUIrow:AddWidget(enableCheck, 1)
-    ElvUIcard:AddRow(ElvUIrow, 40)
+    elvUIRow:AddWidget(elvUICheck, 1)
+    elvUICard:AddRow(elvUIRow, Theme.rowHeight)
 
-    -- Separator
-    local ElvUIsep = GUIFrame:CreateRow(ElvUIcard.content, 8)
-    local sepCBCard = GUIFrame:CreateSeparator(ElvUIsep)
-    ElvUIsep:AddWidget(sepCBCard, 1)
-    ElvUIcard:AddRow(ElvUIsep, 8)
+    local elvUISep = GUIFrame:CreateSeparator(elvUICard.content)
+    elvUICard:AddRow(elvUISep, Theme.rowHeightSeparator)
 
-    local rowHeight = 50
-    local row = GUIFrame:CreateRow(ElvUIcard.content, rowHeight)
-    local textWidget = GUIFrame:CreateText(row, NRSKNUI:ColorTextByTheme("Information"), {
+    local infoRow = GUIFrame:CreateRow(elvUICard.content, 60)
+    local infoWidget = GUIFrame:CreateText(infoRow, NRSKNUI:ColorTextByTheme("Information"), {
         text = NRSKNUI:ColorTextByTheme("• ") ..
-            "Disables all skinning modules when ElvUI is loaded.\nThis way you can still use the non skinning features of the addon without conflict.",
-        height = rowHeight,
+            "Disables all skinning modules when ElvUI is loaded.\n  This way you can still use the non skinning features of the addon without conflict.",
+        height = 60,
         bgMode = "hide"
     })
-    row:AddWidget(textWidget, 1)
-    ElvUIcard:AddRow(row, rowHeight)
+    infoRow:AddWidget(infoWidget, 1)
+    elvUICard:AddRow(infoRow, 60, 0)
 
-    yOffset = yOffset + ElvUIcard:GetContentHeight() + Theme.paddingSmall
+    yOffset = elvUICard:GetNextOffset()
 
-    ----------------------------------------------------------------
-    -- Card General: General Settings Card
-    ----------------------------------------------------------------
-    local GeneralCard = GUIFrame:CreateCard(scrollChild, "General", yOffset)
-    local MinimapDB = NRSKNUI.db.profile.Minimap
+    -- Card 6
+    local supportCard = GUIFrame:CreateCard(scrollChild, "Support", yOffset)
 
-    -- Hide Minimap Icon Checkbox
-    local mapIconRow = GUIFrame:CreateRow(GeneralCard.content, 36)
-    local enableMapIcon = GUIFrame:CreateCheckbox(mapIconRow, "Hide Minimap Icon", {
-        value = MinimapDB.hide ~= false,
-        callback = function(checked)
-            MinimapDB.hide = checked
-        end,
-        msgPopup = true,
-        msgText = "Hide Minimap Icon",
-        msgOn = "On",
-        msgOff = "Off",
-    })
-    mapIconRow:AddWidget(enableMapIcon, 1)
-    GeneralCard:AddRow(mapIconRow, 36)
+    supportCard:AddLabel("Found a bug or have a suggestion?")
+    supportCard:AddSpacing(4)
 
-    -- Login Message Checkbox
-    local loginMsgRow = GUIFrame:CreateRow(GeneralCard.content, 36)
-    local enableLoginMsg = GUIFrame:CreateCheckbox(loginMsgRow, "Show Login Message", {
-        value = MinimapDB.LoginMessage ~= false,
-        callback = function(checked)
-            MinimapDB.LoginMessage = checked
-        end,
-        msgPopup = true,
-        msgText = "Login Message",
-        msgOn = "On",
-        msgOff = "Off",
-    })
-    loginMsgRow:AddWidget(enableLoginMsg, 1)
-    GeneralCard:AddRow(loginMsgRow, 36)
+    supportCard:AddLabel("Join the " .. NRSKNUI:ColorTextByTheme("Discord") .. " or open an issue on " .. NRSKNUI:ColorTextByTheme("GitHub"))
 
-    yOffset = yOffset + GeneralCard:GetContentHeight() + Theme.paddingSmall
+    yOffset = supportCard:GetNextOffset()
 
-    ----------------------------------------------------------------
-    -- Card 3: Current Profile
-    ----------------------------------------------------------------
-    local card3 = GUIFrame:CreateCard(scrollChild, "Profile", yOffset)
-
-    local profileName = NRSKNUI.db and NRSKNUI.db:GetCurrentProfile() or "Default"
-    local profileLabel = card3:AddLabel("Active Profile: |cffffffff" .. profileName .. "|r")
-
-    card3:AddSpacing(4)
-
-    local realmName = GetRealmName() or "Unknown"
-    local charInfo = playerName .. " - " .. realmName
-    local charLabel = card3:AddLabel("Character: |cffffffff" .. charInfo .. "|r")
-    charLabel:SetTextColor(Theme.textMuted[1], Theme.textMuted[2], Theme.textMuted[3], 1)
-
-    yOffset = yOffset + card3:GetContentHeight() + Theme.paddingSmall
-
-    ----------------------------------------------------------------
-    -- Card 5: Getting Started
-    ----------------------------------------------------------------
-    local card5 = GUIFrame:CreateCard(scrollChild, "Getting Started", yOffset)
-
-    local tips = {
-        "Use the sidebar to navigate between different module settings.",
-        "The Theme tab lets you customize colors to match your style.",
-        "Edit Mode allows you to drag and reposition UI elements.",
-        "Most changes apply instantly without needing reload, however i recommend to always do it anways just to be safe. Modules where reload is required will prompt you to reload.",
-    }
-
-    for _, tip in ipairs(tips) do
-        local tipLabel2 = card5:AddLabel(NRSKNUI:ColorTextByTheme("• ") .. tip)
-        tipLabel2:SetTextColor(Theme.textSecondary[1], Theme.textSecondary[2], Theme.textSecondary[3], 1)
-        card5:AddSpacing(2)
-    end
-
-    yOffset = yOffset + card5:GetContentHeight() + Theme.paddingSmall
-
-    ----------------------------------------------------------------
-    -- Card 6: Support
-    ----------------------------------------------------------------
-    local card6 = GUIFrame:CreateCard(scrollChild, "Support", yOffset)
-
-    local supportLabel = card6:AddLabel("Found a bug or have a suggestion?")
-    card6:AddSpacing(4)
-
-    local discordLabel = card6:AddLabel("Join the Discord or open an issue on GitHub!")
-    discordLabel:SetTextColor(Theme.textMuted[1], Theme.textMuted[2], Theme.textMuted[3], 1)
-
-    yOffset = yOffset + card6:GetContentHeight() + Theme.paddingSmall
-
-    yOffset = yOffset - (Theme.paddingSmall * 3)
-    return yOffset
+    return yOffset - Theme.paddingSmall
 end)
