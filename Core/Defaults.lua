@@ -41,6 +41,33 @@ local Defaults = {
         },
     },
     profile = {
+        CharacterPanel = {
+            Enabled = true,
+            DecimalItemLevel = true,
+            FontFace = "Expressway",
+            FontOutline = "OUTLINE",
+            StatsFontSize = 11,
+            LevelTextSize = 12,
+            NameTextSize = 12,
+            CategoryFontSize = 12,
+            IlvlValueSize = 16,
+            FontShadow = {
+                Enabled = false,
+                Color = { 0, 0, 0, 1 },
+                OffsetX = 1,
+                OffsetY = -1,
+            },
+            GemSocketHelper = {
+                Enabled = true,
+                SocketButtonSize = 24,
+                SocketButtonSpacing = 1,
+                ShowOnlyEmpty = false,
+            },
+            TrackIndicators = {
+                Enabled = true,
+            },
+        },
+
         TimeSpiral = {
             Enabled = true,
             IconSize = 40,
@@ -63,13 +90,13 @@ local Defaults = {
             TimerFontSize = 16,
 
             GlowEnabled = true,
-            GlowType = "proc",
+            GlowType = "pixel",
             GlowColor = { 0, 1, 0, 1 },
-            GlowLines = 8,
+            GlowLines = 5,
             GlowFrequency = 0.25,
-            GlowLength = 8,
+            GlowLength = 10,
             GlowThickness = 2,
-            GlowBorder = false,
+            GlowBorder = true,
             GlowScale = 1,
             GlowStartAnim = false,
             GlowDuration = 1,
@@ -98,7 +125,7 @@ local Defaults = {
             ColorFour = { 0, 1, 0 },
 
             FontFace = "Expressway",
-            FontSize = 24,
+            FontSize = 28,
             FontOutline = "SOFTOUTLINE",
             FontShadow = {
                 Enabled = false,
@@ -114,7 +141,7 @@ local Defaults = {
                 AnchorFrom = "CENTER",
                 AnchorTo = "CENTER",
                 XOffset = 0,
-                YOffset = -290,
+                YOffset = -340,
             },
         },
 
@@ -162,8 +189,8 @@ local Defaults = {
             Position = {                         -- Position settings
                 AnchorFrom = "CENTER",           -- Anchor point from
                 AnchorTo = "CENTER",             -- Anchor point to
-                XOffset = 0,                     -- X offset
-                YOffset = -100,                  -- Y offset
+                XOffset = 794,                     -- X offset
+                YOffset = -433,                  -- Y offset
             },
             Backdrop = {                         -- Backdrop settings
                 Enabled = false,                 -- Enable/disable backdrop
@@ -195,10 +222,10 @@ local Defaults = {
             Position = {                  -- Position settings
                 AnchorFrom = "CENTER",    -- Anchor point from
                 AnchorTo = "CENTER",      -- Anchor point to
-                XOffset = 0,              -- X offset
-                YOffset = 172,            -- Y offset
+                XOffset = 0.1,              -- X offset
+                YOffset = 205,            -- Y offset
             },
-            Spacing = 4,                  -- Vertical spacing between messages
+            Spacing = 0,                  -- Vertical spacing between messages
             Grow = "DOWN",                -- Grow direction: DOWN or UP
             Duration = 2.5,               -- How long messages are shown (seconds)
             -- Enter Combat Message
@@ -220,24 +247,24 @@ local Defaults = {
                 Enabled = true,
                 Text = "NO TARGET",
                 Color = { 1, 0.4, 0, 1 },
-                FontSize = 16,
+                FontSize = 18,
             },
             -- Focus Target Died
             FocusDeath = {
                 Enabled = true,
                 Text = "FOCUS DIED",
                 Color = { 1, 0.3, 0.3, 1 },
-                FontSize = 16,
+                FontSize = 18,
             },
             -- Party/Raid Death Announcement
             PartyDeath = {
                 Enabled = true,
                 UseClassColor = true,
-                TextFormat = "%name DIED",
+                TextFormat = "%name died",
                 TextColor = { 1, 1, 1, 1 },
                 CombatOnly = true,
                 LoadCondition = "ANYGROUP",
-                FontSize = 16,
+                FontSize = 18,
             },
         },
 
@@ -271,8 +298,8 @@ local Defaults = {
             Position = {
                 AnchorFrom = "CENTER",
                 AnchorTo = "CENTER",
-                XOffset = 0.1,
-                YOffset = -430,
+                XOffset = 814,
+                YOffset = -465,
             },
             FontFace = "Expressway",
             FontSize = 18,
@@ -296,7 +323,7 @@ local Defaults = {
                 Color = { 0, 0, 0, 0.8 },
                 BorderColor = { 0, 0, 0, 1 },
                 FrameWidth = 112,
-                FrameHeight = 26,
+                FrameHeight = 27,
             },
         },
 
@@ -366,7 +393,7 @@ local Defaults = {
             DeadColor = { 1, 0.2, 0.2, 1 },    -- Red for dead
             -- Font settings
             FontFace = "Expressway",           -- Font face
-            FontSize = 25,                     -- Font size
+            FontSize = 27,                     -- Font size
             FontOutline = "SOFTOUTLINE",       -- Font outline (NONE, OUTLINE, THICKOUTLINE, SOFTOUTLINE)
             -- Position settings
             Strata = "HIGH",                   -- Frame strata
@@ -376,32 +403,31 @@ local Defaults = {
                 AnchorFrom = "CENTER",         -- Anchor point from
                 AnchorTo = "CENTER",           -- Anchor point to
                 XOffset = 0,                   -- X offset
-                YOffset = 105,                 -- Y offset
+                YOffset = 220,                 -- Y offset
             },
         },
 
-        -- Healer Mana Tracker (Party only - shows 1 healer)
+        -- Healer Mana Tracker
         HealerMana = {
             Enabled = true,
             -- Frame settings
-            IconSize = 40,
+            IconSize = 38,
             FrameWidth = 120,
-
-            -- Name text settings
+            -- Text settings
             NameFontSize = 18,
-            NameXOffset = 4,
-            NameYOffset = 10,
-
-            -- Mana text settings
-            ManaFontSize = 18,
-            ManaXOffset = 4,
-            ManaYOffset = -10,
-
+            NameYOffset = 3,
+            ManaFontSize = 24,
+            ManaYOffset = 4,
             -- Font settings
             FontFace = "Expressway",
             FontOutline = "SOFTOUTLINE",
+            FontShadow = {
+                Enabled = false,
+                Color = { 0, 0, 0, 1 },
+                OffsetX = 1,
+                OffsetY = -1,
+            },
             HighManaColor = { 1, 1, 1, 1 },
-
             -- Position settings
             Strata = "HIGH",
             anchorFrameType = "UIPARENT",
@@ -409,7 +435,7 @@ local Defaults = {
             Position = {
                 AnchorFrom = "CENTER",
                 AnchorTo = "CENTER",
-                XOffset = -537,
+                XOffset = -584,
                 YOffset = -72,
             },
         },
@@ -437,7 +463,7 @@ local Defaults = {
                     AnchorFrom = "CENTER",
                     AnchorTo = "CENTER",
                     XOffset = 0,
-                    YOffset = -250,
+                    YOffset = 41,
                 },
             },
 
@@ -445,15 +471,15 @@ local Defaults = {
                 Enabled = true,
                 LoadInRaid = true,
                 LoadInParty = false,
-                Size = 40,
+                Size = 54,
                 Strata = "HIGH",
                 anchorFrameType = "UIPARENT",
                 ParentFrame = "UIParent",
                 Position = {
                     AnchorFrom = "CENTER",
                     AnchorTo = "CENTER",
-                    XOffset = 100,
-                    YOffset = 0,
+                    XOffset = 0,
+                    YOffset = -480,
                 },
             },
 
@@ -468,7 +494,6 @@ local Defaults = {
                     FocusSearchBar = false,
                 },
                 Auctionator = {
-                    CurrentExpansion = true,
                     FocusSearchBar = false,
                 },
             },
@@ -492,7 +517,7 @@ local Defaults = {
                     AnchorFrom = "CENTER",
                     AnchorTo = "CENTER",
                     XOffset = 0,
-                    YOffset = 320,
+                    YOffset = 301,
                 },
             },
 
@@ -519,7 +544,7 @@ local Defaults = {
                     AnchorFrom = "CENTER",    -- Anchor point from
                     AnchorTo = "CENTER",      -- Anchor point to
                     XOffset = 0,              -- X offset
-                    YOffset = -319,           -- Y offset
+                    YOffset = -427,           -- Y offset
                 },
             },
 
@@ -543,7 +568,7 @@ local Defaults = {
                         AnchorFrom = "CENTER",    -- Anchor point from
                         AnchorTo = "CENTER",      -- Anchor point to
                         XOffset = 0,              -- X offset
-                        YOffset = 132,            -- Y offset
+                        YOffset = 105,            -- Y offset
                     },
                 },
 
@@ -571,7 +596,7 @@ local Defaults = {
                 Enabled = true,
                 HideBlizzardBar = true,
                 hideWhenMax = true,
-                width = 400,
+                width = 500,
                 height = 24,
                 FontFace = "Expressway",
                 FontOutline = "OUTLINE",
@@ -586,10 +611,10 @@ local Defaults = {
                 anchorFrameType = "UIPARENT", -- Anchor frame type
                 ParentFrame = "UIParent",     -- Parent frame name
                 Position = {                  -- Position settings
-                    AnchorFrom = "CENTER",    -- Anchor point from
-                    AnchorTo = "CENTER",      -- Anchor point to
+                    AnchorFrom = "TOP",    -- Anchor point from
+                    AnchorTo = "TOP",      -- Anchor point to
                     XOffset = 0,              -- X offset
-                    YOffset = 500,
+                    YOffset = -1,
                 },
                 -- Statusbar coloring
                 ColorMode = "theme",
@@ -653,7 +678,7 @@ local Defaults = {
             },
             DragonRiding = {
                 Enabled = true,
-                Width = 252,
+                Width = 314,
                 BarHeight = 6,
                 Spacing = 3,
                 StatusBarTexture = "NorskenUI",
@@ -661,7 +686,7 @@ local Defaults = {
                     AnchorFrom = "CENTER",
                     AnchorTo = "CENTER",
                     XOffset = 0,
-                    YOffset = 280,
+                    YOffset = 345,
                 },
                 Colors = {
                     Vigor = { 0.898, 0.063, 0.224, 1 },
@@ -672,7 +697,7 @@ local Defaults = {
                 SpeedText = {
                     Enabled = true,
                     FontFace = "Expressway",
-                    FontSize = 14,
+                    FontSize = 16,
                     FontOutline = "SOFTOUTLINE",
                     XOffset = 0,
                     YOffset = 0,
@@ -693,13 +718,13 @@ local Defaults = {
 
                 TargetMarker = {
                     Enabled = true,
-                    Size = 30,
+                    Size = 26,
                     XOffset = -30,
                     YOffset = 0,
                     Anchor = "LEFT",
                 },
 
-                Width = 300,
+                Width = 367,
                 Height = 29,
 
                 FontFace = "Expressway",
@@ -719,7 +744,7 @@ local Defaults = {
                     AnchorFrom = "CENTER",
                     AnchorTo = "CENTER",
                     XOffset = 0,
-                    YOffset = 220,
+                    YOffset = 262,
                 },
 
                 -- Colors
@@ -738,7 +763,7 @@ local Defaults = {
                 -- Hold Timer
                 HoldTimer = {
                     Enabled = true,
-                    Duration = 0.5,
+                    Duration = 1,
                     InterruptedColor = { 0.1, 0.8, 0.1, 1 },
                     FailedColor = { 0.780, 0.250, 0.250, 1 },
                     SuccessColor = { 0.780, 0.250, 0.250, 1 },
@@ -756,8 +781,21 @@ local Defaults = {
                 TargetNames = {
                     Anchor = "RIGHT",
                     XOffset = 0,
-                    YOffset = -24,
+                    YOffset = -22,
                     FontSize = 14,
+                },
+
+                -- Important Spell Glow
+                ImportantGlow = {
+                    GlowEnabled = false,
+                    GlowType = "pixel",
+                    GlowColor = { 1, 0.8, 0, 1 },
+                    GlowLines = 8,
+                    GlowFrequency = 0.25,
+                    GlowLength = 18,
+                    GlowThickness = 2,
+                    GlowBorder = true,
+                    GlowScale = 1,
                 },
             },
         },
@@ -808,7 +846,7 @@ local Defaults = {
                     AlertColor = { 1, 0, 0, 1 },                -- Red for new messages/alerts
                     ActiveColor = { 1, 1, 1, 1 },               -- White for selected/active tab
                     WhisperColor = { 1, 0.5, 0.8, 1 },          -- Pink for whisper tabs
-                    InactiveColorMode = "custom",               -- "theme", "class", or "custom"
+                    InactiveColorMode = "theme",               -- "theme", "class", or "custom"
                     InactiveColor = { 0.898, 0.063, 0.224, 1 }, -- Custom color for inactive tabs
                 },
                 -- EditBox Backdrop Settings
@@ -840,7 +878,7 @@ local Defaults = {
                 HideMacroText = false,     -- Hide macro name text
                 MouseoverOverride = false, -- Mouseover override when dragonriding for example
                 Mouseover = {              -- Global mouseover settings (used when bar's globalOverride is true)
-                    Enabled = false,
+                    Enabled = true,
                     FadeInDuration = 0.3,
                     FadeOutDuration = 1,
                     Alpha = 0,
@@ -1474,8 +1512,8 @@ local Defaults = {
                 Position = {
                     AnchorFrom = "BOTTOMRIGHT",
                     AnchorTo = "BOTTOMRIGHT",
-                    XOffset = -1,
-                    YOffset = 350,
+                    XOffset = -2,
+                    YOffset = 243,
                 },
             },
 
@@ -1574,8 +1612,8 @@ local Defaults = {
 
             -- ExternalBuffTracking (External defensive buffs like Pain Suppression, Ironbark, etc.)
             ExternalBuffTracking = {
-                Enabled = false,
-                ShowBigDefensives = true,
+                Enabled = true,
+                ShowBigDefensives = false,
 
                 -- Icon settings
                 IconSize = 52,
@@ -1587,7 +1625,7 @@ local Defaults = {
                 Reverse = false,
 
                 -- Visual settings
-                BorderColor = { 0.2, 0.8, 0.2, 1 }, -- Green for externals
+                BorderColor = { 0, 0, 0, 1 },
                 BackgroundColor = { 0, 0, 0, 0.3 },
 
                 -- Font settings
@@ -1611,18 +1649,18 @@ local Defaults = {
                 Position = {
                     AnchorFrom = "CENTER",
                     AnchorTo = "CENTER",
-                    XOffset = 0,
-                    YOffset = 200,
+                    XOffset = -320,
+                    YOffset = -70,
                 },
 
                 GlowEnabled = true,
-                GlowType = "proc",
+                GlowType = "pixel",
                 GlowColor = { 0, 1, 0, 1 },
-                GlowLines = 8,
+                GlowLines = 5,
                 GlowFrequency = 0.25,
-                GlowLength = 8,
+                GlowLength = 15,
                 GlowThickness = 2,
-                GlowBorder = false,
+                GlowBorder = true,
                 GlowScale = 1,
                 GlowStartAnim = false,
                 GlowDuration = 1,
@@ -1643,7 +1681,7 @@ local Defaults = {
                     autoSize = false,
                     detailsBars = 8,
                     width = 260,
-                    height = 210,
+                    height = 240,
                     BackgroundColor = { 0, 0, 0, 0.8 },
                     BorderColor = { 0, 0, 0, 1 },
                     anchorFrameType = "UIPARENT",
@@ -1661,7 +1699,7 @@ local Defaults = {
                     autoSize = false,
                     detailsBars = 8,
                     width = 260,
-                    height = 210,
+                    height = 240,
                     BackgroundColor = { 0, 0, 0, 0.8 },
                     BorderColor = { 0, 0, 0, 1 },
                     anchorFrameType = "UIPARENT",
@@ -1974,7 +2012,7 @@ local Defaults = {
 
             -- Stance Text Display Settings
             StanceText = {
-                Enabled = false, -- Enable stance text display
+                Enabled = true,
                 FontFace = "Expressway",
                 FontSize = 14,
                 FontOutline = "SOFTOUTLINE",
