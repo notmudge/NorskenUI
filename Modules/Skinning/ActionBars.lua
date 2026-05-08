@@ -21,6 +21,7 @@ local ipairs = ipairs
 local pairs = pairs
 local InCombatLockdown = InCombatLockdown
 local PetHasActionBar = PetHasActionBar
+local UnitExists = UnitExists
 local GetNumShapeshiftForms = GetNumShapeshiftForms
 local GetCursorPosition = GetCursorPosition
 local pcall = pcall
@@ -818,18 +819,28 @@ local function SetupSpecialBarVisibility(container, blizzFrame, events, visibili
 
     local pendingUpdate = false
     local function UpdateVisibility()
+        -- Check if bar is enabled in settings
+        local barDB = ACB.db and ACB.db.Bars and ACB.db.Bars[barKey]
+        local isEnabled = barDB and barDB.Enabled ~= false
+        local shouldShow = isEnabled and visibilityCheckFn()
+
         if InCombatLockdown() then
+            -- In combat we defer hiding, but still try to recover visibility for bars
+            -- that should be shown (e.g. pet resummoned mid-combat).
+            if shouldShow and not container:IsShown() then
+                local showSucceeded = pcall(container.Show, container)
+                if showSucceeded and container:IsShown() then
+                    pendingUpdate = false
+                    return
+                end
+            end
             pendingUpdate = true
             return
         end
 
         pendingUpdate = false
 
-        -- Check if bar is enabled in settings
-        local barDB = ACB.db and ACB.db.Bars and ACB.db.Bars[barKey]
-        local isEnabled = barDB and barDB.Enabled ~= false
-
-        if isEnabled and visibilityCheckFn() then
+        if shouldShow then
             container:Show()
         else
             container:Hide()
@@ -860,13 +871,25 @@ local function SetupSpecialBarVisibility(container, blizzFrame, events, visibili
     container._visibilityFrame = eventFrame
 end
 
+local function HasPetActions()
+    local maxPetSlots = NUM_PET_ACTION_SLOTS or 10
+    for slot = 1, maxPetSlots do
+        local name = GetPetActionInfo(slot)
+        if name then
+            return true
+        end
+    end
+
+    return false
+end
+
 -- Setup PetBar visibility based on whether the player has a pet action bar
 local function SetupPetBarVisibility(container)
     SetupSpecialBarVisibility(
         container,
         PetActionBar,
         { "PET_BAR_UPDATE", "UNIT_PET", "PLAYER_CONTROL_GAINED", "PLAYER_CONTROL_LOST", "PLAYER_FARSIGHT_FOCUS_CHANGED" },
-        PetHasActionBar,
+        function() return PetHasActionBar() or (UnitExists("pet") and HasPetActions()) end,
         "PetBar"
     )
 end
