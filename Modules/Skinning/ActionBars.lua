@@ -33,6 +33,8 @@ local getmetatable = getmetatable
 local table_insert = table.insert
 local _G = _G
 
+local DEFAULT_PET_ACTION_SLOTS = 10
+
 -- Frame map, maps DB key to frame name and button prefix so we can iterate through them later
 local BAR_FRAME_MAP = {
     Bar1 = { frame = "MainActionBar", prefix = "ActionButton" },
@@ -872,7 +874,7 @@ local function SetupSpecialBarVisibility(container, blizzFrame, events, visibili
 end
 
 local function HasPetActions()
-    local maxPetSlots = NUM_PET_ACTION_SLOTS or 10
+    local maxPetSlots = NUM_PET_ACTION_SLOTS or DEFAULT_PET_ACTION_SLOTS
     for slot = 1, maxPetSlots do
         local name = GetPetActionInfo(slot)
         if name then
